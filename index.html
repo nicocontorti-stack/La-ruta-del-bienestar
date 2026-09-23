@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La ruta del bienestar — Venta por mayor</title>
+<style>
+  :root {
+    --fondo: #EEF1EA;
+    --papel: #FFFFFF;
+    --tinta: #1F2A1F;
+    --suave: #5B665A;
+    --linea: #D5DBCF;
+    --semilla: #3F5B2E;
+    --curcuma: #D99A00;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--tinta);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.4;
+    padding-bottom: 110px;
+  }
+  header {
+    background: var(--semilla);
+    color: #fff;
+    padding: 28px 20px 22px;
+  }
+  header h1 {
+    margin: 0 0 4px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  header p { margin: 0; opacity: .85; font-size: .95rem; }
+  .barra {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--fondo);
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid var(--linea);
+  }
+  input[type="search"] {
+    width: 100%;
+    font: inherit;
+    padding: 12px 14px;
+    border: 1.5px solid var(--linea);
+    border-radius: 10px;
+    background: var(--papel);
+    color: var(--tinta);
+  }
+  input[type="search"]:focus-visible, button:focus-visible {
+    outline: 3px solid var(--curcuma);
+    outline-offset: 2px;
+  }
+  .cats { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 4px; }
+  .cats button {
+    flex: none;
+    font: inherit; font-size: .9rem;
+    padding: 7px 14px;
+    border: 1.5px solid var(--linea);
+    border-radius: 999px;
+    background: var(--papel);
+    color: var(--tinta);
+  }
+  .cats button[aria-pressed="true"] {
+    background: var(--tinta); border-color: var(--tinta); color: #fff;
+  }
+  main { padding: 6px 16px 0; max-width: 640px; margin: 0 auto; }
+  h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.25rem;
+    margin: 22px 0 8px;
+  }
+  .item {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--papel);
+    border: 1px solid var(--linea);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .item .nombre { font-weight: 600; }
+  .item .pres { color: var(--suave); font-size: .88rem; }
+  .item .precio { font-weight: 700; margin-top: 2px; }
+  .cant { display: flex; align-items: center; gap: 4px; flex: none; }
+  .cant button {
+    width: 38px; height: 38px;
+    font-size: 1.3rem; line-height: 1;
+    border: 1.5px solid var(--semilla);
+    border-radius: 10px;
+    background: var(--papel);
+    color: var(--semilla);
+  }
+  .cant button:active { background: var(--semilla); color: #fff; }
+  .cant span { min-width: 28px; text-align: center; font-weight: 700; }
+  .vacio { text-align: center; color: var(--suave); padding: 32px 0; }
+  .pedido {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--tinta);
+    color: #fff;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    display: none;
+    align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .pedido.visible { display: flex; }
+  .pedido .total { font-size: 1.05rem; font-weight: 700; }
+  .pedido .cuenta { font-size: .85rem; opacity: .75; }
+  .pedido button {
+    font: inherit; font-weight: 700;
+    padding: 12px 18px;
+    border: 0; border-radius: 10px;
+    background: var(--curcuma); color: #1F1A00;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>La ruta del bienestar</h1>
+  <p>Productos de dietética por mayor</p>
+</header>
+
+<div class="barra">
+  <input type="search" id="buscar" placeholder="Buscar producto" aria-label="Buscar producto">
+  <div class="cats" id="cats"></div>
+</div>
+
+<main id="lista"></main>
+
+<div class="pedido" id="pedido">
+  <div>
+    <div class="total" id="total"></div>
+    <div class="cuenta" id="cuenta"></div>
+  </div>
+  <button id="enviar">Enviar pedido por WhatsApp</button>
+</div>
+
+<script>
+  let datos = { whatsapp: '', productos: [] };
+  const cantidades = {};
+  let categoria = 'Todos';
+
+  const $ = (id) => document.getElementById(id);
+  const plata = (n) => '$' + n.toLocaleString('es-AR');
+
+  fetch('/api/productos')
+    .then((r) => r.json())
+    .then((d) => { datos = d; armarCategorias(); pintar(); })
+    .catch(() => { $('lista').innerHTML = '<p class="vacio">No se pudo cargar el catálogo.</p>'; });
+
+  function armarCategorias() {
+    const nombres = ['Todos', ...new Set(datos.productos.map((p) => p.categoria))];
+    $('cats').innerHTML = '';
+    nombres.forEach((n) => {
+      const b = document.createElement('button');
+      b.textContent = n;
+      b.setAttribute('aria-pressed', n === categoria);
+      b.onclick = () => { categoria = n; armarCategorias(); pintar(); };
+      $('cats').appendChild(b);
+    });
+  }
+
+  function pintar() {
+    const q = $('buscar').value.trim().toLowerCase();
+    const lista = $('lista');
+    lista.innerHTML = '';
+    const visibles = datos.productos.filter((p) =>
+      (categoria === 'Todos' || p.categoria === categoria) &&
+      p.nombre.toLowerCase().includes(q));
+
+    if (!visibles.length) {
+      lista.innerHTML = '<p class="vacio">No hay productos con esa búsqueda.</p>';
+      return actualizarPedido();
+    }
+
+    let actual = '';
+    visibles.forEach((p) => {
+      if (p.categoria !== actual) {
+        actual = p.categoria;
+        const h = document.createElement('h2');
+        h.textContent = actual;
+        lista.appendChild(h);
+      }
+      const id = p.nombre + '|' + p.presentacion;
+      const fila = document.createElement('div');
+      fila.className = 'item';
+      fila.innerHTML =
+        '<div><div class="nombre"></div><div class="pres"></div><div class="precio"></div></div>' +
+        '<div class="cant"><button aria-label="Quitar uno">−</button><span>0</span><button aria-label="Agregar uno">+</button></div>';
+      fila.querySelector('.nombre').textContent = p.nombre;
+      fila.querySelector('.pres').textContent = p.presentacion;
+      fila.querySelector('.precio').textContent = plata(p.precio);
+      const span = fila.querySelector('span');
+      span.textContent = cantidades[id] || 0;
+      const [menos, mas] = fila.querySelectorAll('button');
+      menos.onclick = () => cambiar(id, -1, span);
+      mas.onclick = () => cambiar(id, 1, span);
+      lista.appendChild(fila);
+    });
+    actualizarPedido();
+  }
+
+  function cambiar(id, d, span) {
+    cantidades[id] = Math.max(0, (cantidades[id] || 0) + d);
+    span.textContent = cantidades[id];
+    actualizarPedido();
+  }
+
+  function itemsPedido() {
+    return datos.productos
+      .map((p) => ({ p, c: cantidades[p.nombre + '|' + p.presentacion] || 0 }))
+      .filter((x) => x.c > 0);
+  }
+
+  function actualizarPedido() {
+    const items = itemsPedido();
+    const total = items.reduce((s, x) => s + x.c * x.p.precio, 0);
+    const unidades = items.reduce((s, x) => s + x.c, 0);
+    $('pedido').classList.toggle('visible', unidades > 0);
+    $('total').textContent = 'Total ' + plata(total);
+    $('cuenta').textContent = unidades + (unidades === 1 ? ' producto' : ' productos');
+  }
+
+  $('buscar').addEventListener('input', pintar);
+
+  $('enviar').onclick = () => {
+    const items = itemsPedido();
+    const total = items.reduce((s, x) => s + x.c * x.p.precio, 0);
+    const lineas = items.map((x) =>
+      '- ' + x.c + ' x ' + x.p.nombre + ' (' + x.p.presentacion + ') ' + plata(x.c * x.p.precio));
+    const texto = 'Hola! Quiero hacer este pedido:\n' + lineas.join('\n') + '\nTotal: ' + plata(total);
+    window.location.href = 'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(texto);
+  };
+</script>
+</body>
+</html>
