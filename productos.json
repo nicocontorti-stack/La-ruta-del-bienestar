@@ -1,0 +1,15 @@
+{
+  "whatsapp": "549XXXXXXXXXX",
+  "productos": [
+    { "categoria": "Frutos secos", "nombre": "Almendras peladas", "presentacion": "Bolsa 1 kg", "precio": 18500 },
+    { "categoria": "Frutos secos", "nombre": "Nueces mariposa", "presentacion": "Bolsa 1 kg", "precio": 16000 },
+    { "categoria": "Frutos secos", "nombre": "Castañas de cajú", "presentacion": "Bolsa 1 kg", "precio": 21000 },
+    { "categoria": "Semillas", "nombre": "Semillas de chía", "presentacion": "Bolsa 1 kg", "precio": 5200 },
+    { "categoria": "Semillas", "nombre": "Semillas de lino", "presentacion": "Bolsa 1 kg", "precio": 3100 },
+    { "categoria": "Semillas", "nombre": "Semillas de girasol peladas", "presentacion": "Bolsa 1 kg", "precio": 3800 },
+    { "categoria": "Cereales", "nombre": "Avena arrollada", "presentacion": "Bolsa 1 kg", "precio": 2400 },
+    { "categoria": "Cereales", "nombre": "Granola sin azúcar", "presentacion": "Bolsa 1 kg", "precio": 6900 },
+    { "categoria": "Harinas", "nombre": "Harina de almendras", "presentacion": "Bolsa 500 g", "precio": 9800 },
+    { "categoria": "Harinas", "nombre": "Harina de coco", "presentacion": "Bolsa 500 g", "precio": 4600 }
+  ]
+}

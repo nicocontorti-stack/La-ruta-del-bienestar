@@ -1,0 +1,7 @@
+{
+  "name": "la-ruta-del-bienestar",
+  "version": "1.0.0",
+  "description": "Catálogo mayorista de dietética",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" }
+}
