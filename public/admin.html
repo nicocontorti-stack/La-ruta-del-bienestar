@@ -390,11 +390,23 @@
     }).join('');
   }
   async function ajustar(nombre) {
-    const v = prompt(`Ajustar "${nombre}"\nPoné cuánto sumar (ej: 5) o restar (ej: -2):`);
-    if (v === null) return; const n = Number(String(v).replace(',', '.'));
-    if (!n) return aviso('Número inválido', '#b3261e');
-    const motivo = prompt('Motivo (ej: se rompió, vencido):') || '';
-    try { await api('ajuste', { producto: nombre, cantidad: n, motivo }); aviso('Stock ajustado ✅', '#2f6b2f'); await cargar(); } catch (e) { aviso(e.message, '#b3261e'); }
+    const info = infoStock(nombre);
+    const v = prompt(`"${nombre}"\n¿Cuántas unidades tenés AHORA?` + (info.contado ? ` (hoy figura ${cant(info.stock)})` : ''));
+    if (v === null) return;
+    const t = String(v).trim().replace(',', '.');
+    const n = Number(t);
+    if (t === '' || !isFinite(n) || n < 0) return aviso('Poné un número (0 o más)', '#b3261e');
+    try {
+      if (!info.contado) {
+        await api('contar', { conteos: { [nombre]: n } });
+      } else {
+        const d = n - info.stock;
+        if (!d) return aviso('Ya figura con ' + cant(n) + ' ✅', '#2f6b2f');
+        const motivo = prompt('Motivo (opcional, ej: se rompió, vencido):') || '';
+        await api('ajuste', { producto: nombre, cantidad: d, motivo });
+      }
+      aviso('Stock actualizado ✅', '#2f6b2f'); await cargar();
+    } catch (e) { aviso(e.message, '#b3261e'); }
   }
   async function minimo(nombre) {
     const v = prompt(`¿Con cuántas unidades querés que te avise que "${nombre}" se está terminando?`, infoStock(nombre).minimo);
@@ -415,7 +427,9 @@
   function cerrarConteo() { $('conteo').classList.add('oculto'); }
   async function guardarConteo() {
     const conteos = {};
-    document.querySelectorAll('#tabla-conteo input').forEach((i) => { if (i.value !== '') conteos[i.dataset.p] = +i.value; });
+    document.querySelectorAll('#tabla-conteo input').forEach((i) => { const t = String(i.value).trim().replace(',', '.'); if (t !== '') conteos[i.dataset.p] = Number(t); });
+    const malos = Object.keys(conteos).filter((k) => !isFinite(conteos[k]) || conteos[k] < 0);
+    if (malos.length) return aviso('Revisá el número de: ' + malos[0], '#b3261e');
     if (!Object.keys(conteos).length) return aviso('No cargaste ningún número', '#b3261e');
     $('btn-conteo').disabled = true;
     try { const j = await api('contar', { conteos }); aviso(`Conteo guardado (${j.contados} productos) ✅`, '#2f6b2f'); cerrarConteo(); await cargar(); } catch (e) { aviso(e.message, '#b3261e'); }
