@@ -111,6 +111,9 @@
     font-size: 1.4rem; line-height: 1;
   }
   .cant span { min-width: 26px; text-align: center; font-weight: 700; font-size: 1.1rem; }
+  .sinstock { flex: none; padding: 8px 12px; border-radius: 12px; background: #eee; color: #8a8a8a; font-weight: 700; font-size: .95rem; }
+  .tarjeta.agotado .foto { opacity: .5; }
+  .tarjeta.agotado .precio { color: #9a9a9a; }
   .vacio { grid-column: 1 / -1; text-align: center; color: var(--suave); padding: 32px 0; }
   .whatsapp {
     position: fixed; right: 16px; bottom: 24px; z-index: 20;
@@ -192,6 +195,25 @@
     .then((d) => { productos = d.productos || []; armarCategorias(); pintar(); })
     .catch(() => { $('lista').innerHTML = '<p class="vacio">No se pudo cargar el catálogo.</p>'; });
 
+  // Stock: marca "Sin stock" solo en productos contados por el dueño.
+  // Si no responde, el catálogo queda normal.
+  const STOCK_URL = 'https://script.google.com/macros/s/AKfycbzV_CxuKYu5uEjWOswbSZZLatlc8i5TvjT-Ldt_Ihre0RS-18eZy4AaOKvFmpfY-ikp/exec';
+  let sinStock = new Set();
+  (function cargarStock() {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const corte = setTimeout(() => ctl && ctl.abort(), 8000);
+    fetch(STOCK_URL + '?accion=sinstock', ctl ? { signal: ctl.signal } : {})
+      .then((r) => r.json())
+      .then((d) => {
+        clearTimeout(corte);
+        if (!d || !d.ok || !Array.isArray(d.sinStock)) return;
+        sinStock = new Set(d.sinStock);
+        productos.forEach((p) => { if (sinStock.has(p.nombre)) delete cantidades[clave(p)]; });
+        if (productos.length) pintar();
+      })
+      .catch(() => {});
+  })();
+
   function armarCategorias() {
     const lista = [...new Set(productos.map((p) => p.categoria).filter(Boolean))];
     $('cats').innerHTML = '';
@@ -249,6 +271,13 @@
     const id = clave(p);
     const c = cantidades[id] || 0;
     caja.innerHTML = '';
+    if (sinStock.has(p.nombre)) {
+      const s = document.createElement('span');
+      s.className = 'sinstock'; s.textContent = 'Sin stock';
+      caja.appendChild(s);
+      caja.closest('.tarjeta') && caja.closest('.tarjeta').classList.add('agotado');
+      return;
+    }
     if (!c) {
       const b = document.createElement('button');
       b.className = 'agregar'; b.textContent = '+';
