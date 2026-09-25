@@ -106,6 +106,20 @@
       </div>
       <button class="prim" id="btn-venta" onclick="guardarVenta()">Guardar venta</button>
     </div>
+    <div class="card">
+      <h2>Venta rápida</h2>
+      <p style="color:#555;margin:0 0 10px">Anotá solo el total, sin elegir productos. No cambia el stock ni calcula la ganancia de esa venta.</p>
+      <label for="total-rapido">Monto total $</label>
+      <input id="total-rapido" type="number" inputmode="decimal" min="0.01" step="any" placeholder="Ej: 15000">
+      <label for="cliente-rapido">Cliente (opcional)</label><input id="cliente-rapido" placeholder="Nombre">
+      <label>Pago</label>
+      <div class="seg" id="pago-rapido">
+        <button class="chip activo" data-v="Efectivo">Efectivo</button>
+        <button class="chip" data-v="Transferencia">Transferencia</button>
+        <button class="chip" data-v="Otro">Otro</button>
+      </div>
+      <button class="prim" id="btn-rapida" onclick="guardarVentaRapida()">Guardar venta rápida</button>
+    </div>
   </section>
 
   <!-- Comprar -->
@@ -345,6 +359,21 @@
     $('btn-venta').disabled = false;
   }
 
+  async function guardarVentaRapida() {
+    const raw = $('total-rapido').value.trim().replace(',', '.');
+    const total = Number(raw);
+    if (!raw || !Number.isFinite(total) || total <= 0) return aviso('Poné un monto mayor que 0', '#b3261e');
+    const pago = document.querySelector('#pago-rapido .activo').dataset.v;
+    $('btn-rapida').disabled = true;
+    try {
+      await api('ventaRapida', { total, cliente: $('cliente-rapido').value, pago });
+      $('total-rapido').value = ''; $('cliente-rapido').value = '';
+      aviso('Venta rápida guardada ✅', '#2f6b2f');
+      await cargar();
+    } catch (e) { aviso(e.message, '#b3261e'); }
+    $('btn-rapida').disabled = false;
+  }
+
   // ---------- Comprar ----------
   function pintarBusquedaCompra() {
     const q = $('buscar-compra').value;
@@ -448,18 +477,18 @@
     const ventas = datos.ventas.filter((v) => v.fecha >= t0), compras = datos.compras.filter((c) => c.fecha >= t0);
     const total = ventas.reduce((s, v) => s + v.total, 0);
     let ganancia = 0, sinCosto = 0;
-    ventas.forEach((v) => { const c = infoStock(v.producto).costo; if (c == null) sinCosto++; else ganancia += v.total - v.cantidad * c; });
+    ventas.forEach((v) => { if (v.producto === 'Venta rápida' && v.cantidad === 0) { sinCosto++; return; } const c = infoStock(v.producto).costo; if (c == null) sinCosto++; else ganancia += v.total - v.cantidad * c; });
     $('k-ventas').textContent = plata(total);
     $('k-cant').textContent = new Set(ventas.map((v) => v.venta)).size;
     $('k-compras').textContent = plata(compras.reduce((s, c) => s + c.total, 0));
     $('k-ganancia').textContent = plata(ganancia);
-    $('k-nota').textContent = sinCosto ? `La ganancia no incluye ${sinCosto} producto(s) vendidos sin costo cargado. Se completa cuando anotás una compra de ese producto.` : '';
+    $('k-nota').textContent = sinCosto ? `La ganancia estimada no incluye ${sinCosto} registro(s) sin costo conocido (las ventas rápidas no detallan productos).` : '';
     const top = {};
-    ventas.forEach((v) => { top[v.producto] = top[v.producto] || { c: 0, t: 0 }; top[v.producto].c += v.cantidad; top[v.producto].t += v.total; });
+    ventas.forEach((v) => { if (v.producto === 'Venta rápida' && v.cantidad === 0) return; top[v.producto] = top[v.producto] || { c: 0, t: 0 }; top[v.producto].c += v.cantidad; top[v.producto].t += v.total; });
     const orden = Object.keys(top).sort((a, b) => top[b].t - top[a].t).slice(0, 5);
     $('top').innerHTML = orden.length ? orden.map((p) => `<tr><td>${esc(p)}</td><td class="n">${cant(top[p].c)} u.</td><td class="n">${plata(top[p].t)}</td></tr>`).join('') : '<tr><td style="color:#777">Todavía no hay ventas en este período.</td></tr>';
     const f = (ms) => new Date(ms).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    $('ult-ventas').innerHTML = datos.ventas.slice(-10).reverse().map((v) => `<tr><td>${f(v.fecha)}<br><small>${esc(v.cliente || '')} ${esc(v.pago || '')}${v.cargo ? ' · cargó ' + esc(v.cargo) : ''}</small></td><td>${esc(v.producto)} x${cant(v.cantidad)}</td><td class="n">${plata(v.total)}</td></tr>`).join('') || '<tr><td style="color:#777">Sin ventas todavía.</td></tr>';
+    $('ult-ventas').innerHTML = datos.ventas.slice(-10).reverse().map((v) => `<tr><td>${f(v.fecha)}<br><small>${esc(v.cliente || '')} ${esc(v.pago || '')}${v.cargo ? ' · cargó ' + esc(v.cargo) : ''}</small></td><td>${v.producto === 'Venta rápida' && v.cantidad === 0 ? 'Venta rápida (sin productos)' : esc(v.producto) + ' x' + cant(v.cantidad)}</td><td class="n">${plata(v.total)}</td></tr>`).join('') || '<tr><td style="color:#777">Sin ventas todavía.</td></tr>';
     $('ult-compras').innerHTML = datos.compras.slice(-10).reverse().map((c) => `<tr><td>${f(c.fecha)}<br><small>${esc(c.proveedor || '')}${c.cargo ? ' · cargó ' + esc(c.cargo) : ''}</small></td><td>${esc(c.producto)} x${cant(c.cantidad)}</td><td class="n">${plata(c.total)}</td></tr>`).join('') || '<tr><td style="color:#777">Sin compras todavía.</td></tr>';
   }
 
@@ -472,6 +501,7 @@
   function pintarTodo() { pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarNumeros(); }
   document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => mostrar(b.dataset.v)));
   document.querySelectorAll('#pago button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
+  document.querySelectorAll('#pago-rapido button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago-rapido button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
   document.querySelectorAll('#periodo button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#periodo button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); periodo = b.dataset.v; pintarNumeros(); }));
   $('compra-cant').oninput = calcCompra; $('compra-costo').oninput = calcCompra;
   $('pin').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
