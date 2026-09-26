@@ -28,7 +28,7 @@
   button.prim { background: var(--verde); color: #fff; border-color: var(--verde); width: 100%; padding: 14px; font-weight: 600; margin-top: 12px; }
   button:disabled { opacity: .5; }
   nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; border-top: 1px solid var(--borde); z-index: 5; }
-  nav button { flex: 1; border: 0; border-radius: 0; padding: 10px 4px 12px; font-size: 13px; color: #555; }
+  nav button { flex: 1; min-width: 0; border: 0; border-radius: 0; padding: 10px 2px 12px; font-size: 11px; color: #555; }
   nav button b { display: block; font-size: 20px; }
   nav button.activo { color: var(--verde); font-weight: 700; }
   .lista { max-height: 320px; overflow-y: auto; margin-top: 8px; }
@@ -123,7 +123,12 @@
       <p id="res-sin-contar" class="res-nota"></p>
       <button onclick="mostrar('stock')">Ver stock completo</button>
     </div>
-    <div class="card"><h2>Deudas de clientes</h2><p class="res-nota" style="margin:0">Todavía no se registran saldos pendientes en este panel.</p></div>
+    <div class="card">
+      <h2>Deudas de clientes</h2>
+      <b id="res-deudas" style="font-size:28px">$ 0</b>
+      <p id="res-deudas-cant" class="res-nota"></p>
+      <button onclick="mostrar('deudas')">Ver deudas y registrar pago</button>
+    </div>
   </section>
 
   <!-- Vender -->
@@ -143,6 +148,7 @@
         <button class="chip activo" data-v="Efectivo">Efectivo</button>
         <button class="chip" data-v="Transferencia">Transferencia</button>
         <button class="chip" data-v="Otro">Otro</button>
+        <button class="chip" data-v="Fiado">Fiado</button>
       </div>
       <button class="prim" id="btn-venta" onclick="guardarVenta()">Guardar venta</button>
     </div>
@@ -157,9 +163,26 @@
         <button class="chip activo" data-v="Efectivo">Efectivo</button>
         <button class="chip" data-v="Transferencia">Transferencia</button>
         <button class="chip" data-v="Otro">Otro</button>
+        <button class="chip" data-v="Fiado">Fiado</button>
       </div>
       <button class="prim" id="btn-rapida" onclick="guardarVentaRapida()">Guardar venta rápida</button>
     </div>
+  </section>
+
+  <!-- Deudas -->
+  <section id="v-deudas" class="oculto">
+    <div class="card"><h2>Deudas por cliente</h2><div id="lista-deudas"></div></div>
+    <div class="card">
+      <h2>Registrar pago</h2>
+      <label for="pago-cliente">Cliente</label><select id="pago-cliente"></select>
+      <p id="pago-saldo" class="res-nota"></p>
+      <label for="pago-monto">Monto que pagó $</label>
+      <input id="pago-monto" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Ej: 5000">
+      <label for="pago-medio">Cómo pagó</label>
+      <select id="pago-medio"><option>Efectivo</option><option>Transferencia</option><option>Otro</option></select>
+      <button class="prim" id="btn-pago" onclick="registrarPago()">Guardar pago</button>
+    </div>
+    <p class="res-nota">Solo se suman ventas marcadas como Fiado en este panel. Las deudas de otras apps no se importan automáticamente.</p>
   </section>
 
   <!-- Comprar -->
@@ -239,6 +262,7 @@
 <nav id="nav" class="oculto">
   <button data-v="resumen" class="activo"><b>🏠</b>Resumen</button>
   <button data-v="vender"><b>🛒</b>Vender</button>
+  <button data-v="deudas"><b>💵</b>Deudas</button>
   <button data-v="comprar"><b>📦</b>Comprar</button>
   <button data-v="stock"><b>📋</b>Stock</button>
   <button data-v="numeros"><b>📈</b>Números</button>
@@ -255,7 +279,7 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   let PIN = sessionStorage.getItem('pin') || localStorage.getItem('pin') || '';
   let YO = { nombre: '', dueno: false };
-  let catalogo = [], datos = { productos: [], ventas: [], compras: [] }, carrito = [], compraSel = null, periodo = 'hoy';
+  let catalogo = [], datos = { productos: [], ventas: [], compras: [], deudas: [], pagos: [] }, carrito = [], compraSel = null, periodo = 'hoy';
 
   function aviso(t, color) {
     const m = $('msg'); m.textContent = t; m.style.background = color || '#333'; m.style.display = 'block';
@@ -391,6 +415,7 @@
     const items = carrito.filter((i) => i.cantidad > 0);
     if (!items.length) return aviso('Agregá al menos un producto', '#b3261e');
     const pago = document.querySelector('#pago .activo').dataset.v;
+    if (pago === 'Fiado' && !$('cliente').value.trim()) return aviso('Poné el nombre del cliente para fiar', '#b3261e');
     $('btn-venta').disabled = true;
     try {
       await api('venta', { items, cliente: $('cliente').value, pago });
@@ -406,6 +431,7 @@
     const total = Number(raw);
     if (!raw || !Number.isFinite(total) || total <= 0) return aviso('Poné un monto mayor que 0', '#b3261e');
     const pago = document.querySelector('#pago-rapido .activo').dataset.v;
+    if (pago === 'Fiado' && !$('cliente-rapido').value.trim()) return aviso('Poné el nombre del cliente para fiar', '#b3261e');
     $('btn-rapida').disabled = true;
     try {
       await api('ventaRapida', { total, cliente: $('cliente-rapido').value, pago });
@@ -414,6 +440,36 @@
       await cargar();
     } catch (e) { aviso(e.message, '#b3261e'); }
     $('btn-rapida').disabled = false;
+  }
+
+  // ---------- Deudas ----------
+  function pintarDeudas() {
+    const lista = datos.deudas || [];
+    $('lista-deudas').innerHTML = lista.length ? lista.map((c) =>
+      '<div class="prod"><div class="nom">' + esc(c.cliente) + '</div><b>' + plata(c.saldo) + '</b></div>'
+    ).join('') : '<p class="res-nota">No hay deudas pendientes registradas acá.</p>';
+    const actual = $('pago-cliente').value;
+    $('pago-cliente').innerHTML = '<option value="">Elegí un cliente</option>' + lista.map((c) => '<option value="' + esc(c.cliente) + '">' + esc(c.cliente) + '</option>').join('');
+    if (lista.some((c) => c.cliente === actual)) $('pago-cliente').value = actual;
+    actualizarSaldoPago();
+  }
+  function actualizarSaldoPago() {
+    const c = (datos.deudas || []).find((x) => x.cliente === $('pago-cliente').value);
+    $('pago-saldo').textContent = c ? 'Debe ' + plata(c.saldo) : 'Elegí un cliente de la lista.';
+  }
+  async function registrarPago() {
+    const cliente = $('pago-cliente').value;
+    const monto = Number($('pago-monto').value.replace(',', '.'));
+    const deuda = (datos.deudas || []).find((x) => x.cliente === cliente);
+    if (!deuda) return aviso('Elegí un cliente con deuda', '#b3261e');
+    if (!Number.isFinite(monto) || monto <= 0 || Math.round(monto * 100) > Math.round(deuda.saldo * 100)) return aviso('Poné un monto entre $ 0,01 y ' + plata(deuda.saldo), '#b3261e');
+    $('btn-pago').disabled = true;
+    try {
+      await api('registrarPago', { cliente, monto, medio: $('pago-medio').value });
+      $('pago-monto').value = '';
+      aviso('Pago guardado ✅', '#2f6b2f'); await cargar();
+    } catch (e) { aviso(e.message, '#b3261e'); }
+    $('btn-pago').disabled = false;
   }
 
   // ---------- Comprar ----------
@@ -546,6 +602,9 @@
       : '<span>No hay productos contados con stock bajo ✅</span>';
     const sin = todos.filter((p) => !p.contado).length;
     $('res-sin-contar').textContent = sin ? `${sin} ${sin === 1 ? 'producto todavía no tiene' : 'productos todavía no tienen'} stock contado.` : '';
+    const deudas = datos.deudas || [];
+    $('res-deudas').textContent = plata(deudas.reduce((s, c) => s + c.saldo, 0));
+    $('res-deudas-cant').textContent = deudas.length + (deudas.length === 1 ? ' cliente con deuda pendiente' : ' clientes con deuda pendiente');
   }
 
   // ---------- Números ----------
@@ -577,14 +636,15 @@
 
   // ---------- Navegación ----------
   function mostrar(v) {
-    ['resumen', 'vender', 'comprar', 'stock', 'numeros'].forEach((x) => $('v-' + x).classList.toggle('oculto', x !== v));
+    ['resumen', 'vender', 'deudas', 'comprar', 'stock', 'numeros'].forEach((x) => $('v-' + x).classList.toggle('oculto', x !== v));
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('activo', b.dataset.v === v));
     window.scrollTo(0, 0);
   }
-  function pintarTodo() { pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarNumeros(); }
+  function pintarTodo() { pintarDeudas(); pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarNumeros(); }
   document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => mostrar(b.dataset.v)));
   document.querySelectorAll('#pago button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
   document.querySelectorAll('#pago-rapido button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago-rapido button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
+  $('pago-cliente').onchange = actualizarSaldoPago;
   document.querySelectorAll('#periodo button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#periodo button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); periodo = b.dataset.v; pintarNumeros(); }));
   $('compra-cant').oninput = calcCompra; $('compra-costo').oninput = calcCompra;
   $('pin').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
