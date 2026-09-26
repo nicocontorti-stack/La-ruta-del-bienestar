@@ -45,6 +45,13 @@
   .kpi { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 12px; }
   .kpi span { display: block; color: #555; font-size: 13px; }
   .kpi b { font-size: 20px; }
+  .res-total { background: #e8f5e9; border-color: #b5d4b3; }
+  .res-total b { display:block; font-size: 32px; color: var(--verde); margin: 4px 0; }
+  .res-total small, .res-nota { color:#555; font-size:13px; }
+  .res-enlaces { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-enlaces button { font-weight:600; min-height:48px; }
+  .res-lista { margin:8px 0 0; padding-left:20px; max-height:190px; overflow:auto; }
+  .res-lista li { padding:3px 0; }
   .seg { display: flex; gap: 6px; margin-bottom: 12px; }
   .seg button { flex: 1; }
   .seg button.activo, .chip.activo { background: var(--verde); color: #fff; border-color: var(--verde); }
@@ -91,6 +98,29 @@
       <button class="prim" onclick="aceptarCodigo()">Entrar</button>
       <p style="margin-top:16px"><a href="#" onclick="volverEntrar();return false">Volver</a></p>
     </div>
+  </section>
+
+  <!-- Resumen -->
+  <section id="v-resumen" class="oculto">
+    <div class="card res-total">
+      <span>Ventas de hoy</span><b id="res-ventas">$ 0</b>
+      <small id="res-cant">0 ventas registradas hoy</small>
+    </div>
+    <div class="card">
+      <h2>Tu catálogo</h2>
+      <div class="res-enlaces">
+        <button class="prim" style="margin:0" onclick="compartirCatalogo()">Compartir catálogo</button>
+        <button onclick="abrirCatalogo()">Ver catálogo</button>
+      </div>
+      <p class="res-nota">El enlace abre solo el catálogo público, nunca este panel privado.</p>
+    </div>
+    <div class="card">
+      <h2>Stock bajo</h2>
+      <div id="res-stock">Cargando...</div>
+      <p id="res-sin-contar" class="res-nota"></p>
+      <button onclick="mostrar('stock')">Ver stock completo</button>
+    </div>
+    <div class="card"><h2>Deudas de clientes</h2><p class="res-nota" style="margin:0">Todavía no se registran saldos pendientes en este panel.</p></div>
   </section>
 
   <!-- Vender -->
@@ -203,7 +233,8 @@
 </main>
 
 <nav id="nav" class="oculto">
-  <button data-v="vender" class="activo"><b>🛒</b>Vender</button>
+  <button data-v="resumen" class="activo"><b>🏠</b>Resumen</button>
+  <button data-v="vender"><b>🛒</b>Vender</button>
   <button data-v="comprar"><b>📦</b>Comprar</button>
   <button data-v="stock"><b>📋</b>Stock</button>
   <button data-v="numeros"><b>📈</b>Números</button>
@@ -304,7 +335,7 @@
     $('personas-dueno').classList.toggle('oculto', !YO.dueno);
     cargarPersonas();
     $('v-login').classList.add('oculto'); $('nav').classList.remove('oculto');
-    mostrar('vender');
+    mostrar('resumen');
     await cargar();
   }
   async function cargar() {
@@ -472,6 +503,32 @@
     $('btn-conteo').disabled = false;
   }
 
+  // ---------- Resumen ----------
+  const ENLACE_CATALOGO = 'https://la-ruta-del-bienestar.onrender.com/';
+  async function compartirCatalogo() {
+    if (navigator.share) {
+      try { await navigator.share({ title: 'La Ruta del Bienestar', text: 'Mirá nuestro catálogo:', url: ENLACE_CATALOGO }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(ENLACE_CATALOGO); aviso('Enlace copiado. Pegalo en WhatsApp ✅', '#2f6b2f'); }
+    catch (e) { prompt('Copiá el enlace del catálogo:', ENLACE_CATALOGO); }
+  }
+  function abrirCatalogo() { window.open(ENLACE_CATALOGO, '_blank', 'noopener'); }
+  function pintarResumen() {
+    const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
+    const ventas = (datos.ventas || []).filter((v) => Number(v.fecha) >= +inicio && Number(v.fecha) < +inicio + 86400000);
+    $('res-ventas').textContent = plata(ventas.reduce((s, v) => s + (Number(v.total) || 0), 0));
+    const n = new Set(ventas.map((v) => v.venta)).size;
+    $('res-cant').textContent = `${n} ${n === 1 ? 'venta registrada' : 'ventas registradas'} hoy`;
+    const todos = todosLosProductos();
+    const bajos = todos.filter((p) => p.contado && Number(p.stock) <= Number(p.minimo));
+    $('res-stock').innerHTML = bajos.length
+      ? `<b class="bajo">${bajos.length} ${bajos.length === 1 ? 'producto para revisar' : 'productos para revisar'}</b><ul class="res-lista">${bajos.map((p) => `<li>${esc(p.nombre)}: <b>${cant(p.stock)}</b> ${p.stock === 1 ? 'unidad' : 'unidades'}</li>`).join('')}</ul>`
+      : '<span>No hay productos contados con stock bajo ✅</span>';
+    const sin = todos.filter((p) => !p.contado).length;
+    $('res-sin-contar').textContent = sin ? `${sin} ${sin === 1 ? 'producto todavía no tiene' : 'productos todavía no tienen'} stock contado.` : '';
+  }
+
   // ---------- Números ----------
   function desde() {
     const d = new Date(); d.setHours(0, 0, 0, 0);
@@ -501,11 +558,11 @@
 
   // ---------- Navegación ----------
   function mostrar(v) {
-    ['vender', 'comprar', 'stock', 'numeros'].forEach((x) => $('v-' + x).classList.toggle('oculto', x !== v));
+    ['resumen', 'vender', 'comprar', 'stock', 'numeros'].forEach((x) => $('v-' + x).classList.toggle('oculto', x !== v));
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('activo', b.dataset.v === v));
     window.scrollTo(0, 0);
   }
-  function pintarTodo() { pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarNumeros(); }
+  function pintarTodo() { pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarNumeros(); }
   document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => mostrar(b.dataset.v)));
   document.querySelectorAll('#pago button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
   document.querySelectorAll('#pago-rapido button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago-rapido button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
