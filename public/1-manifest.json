@@ -1,0 +1,31 @@
+{
+  "name": "La Ruta del Bienestar",
+  "short_name": "La Ruta",
+  "description": "Catálogo de La Ruta del Bienestar. Mirá los productos y hacé tu pedido por WhatsApp.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#DEE6D1",
+  "theme_color": "#3F6B2E",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

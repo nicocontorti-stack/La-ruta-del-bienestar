@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3F6B2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="La Ruta">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<title>La Ruta del Bienestar | Dietética por mayor</title>
+<meta name="description" content="Catálogo de La Ruta del Bienestar. Mirá los productos y hacé tu pedido por WhatsApp.">
+<style>
+  /* Colores de la marca: cambiá estos valores si querés otro tono */
+  :root {
+    --fondo: #F3F5F0;
+    --papel: #FFFFFF;
+    --tinta: #1F2A1F;
+    --suave: #5B665A;
+    --linea: #D5DBCF;
+    --verde: #3F6B2E;
+    --azul: #1F4E8C;
+    --wa: #1E8E4E;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--tinta);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.4;
+    padding-bottom: 120px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--papel);
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .marca h1 {
+    margin: 0;
+    font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em;
+    color: var(--azul);
+  }
+  .marca p { margin: 0; font-size: .82rem; color: var(--verde); font-weight: 600; }
+  .carrito {
+    position: relative; flex: none;
+    width: 48px; height: 48px;
+    border: 0; background: none; padding: 0; color: var(--tinta);
+  }
+  .carrito svg { width: 34px; height: 34px; }
+  .carrito .num {
+    position: absolute; top: 2px; right: 0;
+    min-width: 20px; height: 20px; padding: 0 5px;
+    border-radius: 999px; background: var(--verde); color: #fff;
+    font-size: .75rem; font-weight: 700; line-height: 20px; text-align: center;
+    display: none;
+  }
+  .carrito .num.visible { display: block; }
+  .buscador { padding: 14px 16px 4px; max-width: 640px; margin: 0 auto; }
+  input[type="search"] {
+    width: 100%; font: inherit;
+    padding: 12px 14px;
+    border: 1.5px solid var(--linea); border-radius: 12px;
+    background: var(--papel); color: var(--tinta);
+  }
+  input[type="search"]:focus-visible, button:focus-visible {
+    outline: 3px solid var(--verde); outline-offset: 2px;
+  }
+  .cats { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 2px; }
+  .cats:empty { display: none; }
+  .cats button {
+    flex: none; font: inherit; font-size: .9rem;
+    padding: 7px 14px;
+    border: 1.5px solid var(--linea); border-radius: 999px;
+    background: var(--papel); color: var(--tinta);
+  }
+  .cats button[aria-pressed="true"] { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+  main {
+    max-width: 640px; margin: 0 auto; padding: 10px 16px 0;
+    display: grid; grid-template-columns: 1fr; gap: 16px;
+  }
+  @media (min-width: 560px) { main { max-width: 960px; grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 900px) { main { grid-template-columns: repeat(3, 1fr); } }
+  .tarjeta {
+    background: var(--papel);
+    border: 2px solid var(--linea); border-radius: 18px;
+    padding: 14px;
+    display: flex; flex-direction: column;
+  }
+  .foto {
+    width: 100%; aspect-ratio: 1 / 1;
+    border-radius: 12px; overflow: hidden;
+    background: #E7ECE2;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--suave); font-size: .9rem;
+  }
+  .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tarjeta .nombre { font-size: 1.15rem; margin: 14px 0 6px; font-weight: 500; color: #3B4652; }
+  .tarjeta .desc { margin: 0 0 12px; color: var(--tinta); font-size: .98rem; }
+  .pie { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .precio { font-size: 1.35rem; font-weight: 700; }
+  .agregar {
+    width: 52px; height: 52px; flex: none;
+    border: 2px solid var(--linea); border-radius: 14px;
+    background: var(--papel); color: var(--tinta);
+    font-size: 1.7rem; line-height: 1;
+  }
+  .cant { display: flex; align-items: center; gap: 6px; flex: none; }
+  .cant button {
+    width: 42px; height: 42px;
+    border: 2px solid var(--verde); border-radius: 12px;
+    background: var(--papel); color: var(--verde);
+    font-size: 1.4rem; line-height: 1;
+  }
+  .cant span { min-width: 26px; text-align: center; font-weight: 700; font-size: 1.1rem; }
+  .sinstock { flex: none; padding: 8px 12px; border-radius: 12px; background: #eee; color: #8a8a8a; font-weight: 700; font-size: .95rem; }
+  .tarjeta.agotado .foto { opacity: .5; }
+  .tarjeta.agotado .precio { color: #9a9a9a; }
+  .vacio { grid-column: 1 / -1; text-align: center; color: var(--suave); padding: 32px 0; }
+  .whatsapp {
+    position: fixed; right: 16px; bottom: 24px; z-index: 20;
+    width: 60px; height: 60px; border-radius: 50%;
+    background: var(--wa); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  }
+  .whatsapp svg { width: 32px; height: 32px; }
+  body.con-pedido .whatsapp { bottom: 96px; }
+  .pedido {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
+    background: var(--tinta); color: #fff;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    display: none; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .pedido.visible { display: flex; }
+  .pedido .total { font-size: 1.05rem; font-weight: 700; }
+  .pedido .cuenta { font-size: .85rem; opacity: .75; }
+  .pedido button {
+    font: inherit; font-weight: 700;
+    padding: 12px 16px; border: 0; border-radius: 12px;
+    background: var(--wa); color: #fff;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">
+    <h1>La Ruta del Bienestar</h1>
+    <p>Hábitos sanos para la familia · Dietética</p>
+  </div>
+  <button class="carrito" id="carrito" aria-label="Ver pedido">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M5 10h14l-1.5 9h-11z"/><path d="M8 10l4-6 4 6"/><path d="M9.5 13v3M12 13v3M14.5 13v3"/>
+    </svg>
+    <span class="num" id="num">0</span>
+  </button>
+</header>
+
+<div class="buscador">
+  <input type="search" id="buscar" placeholder="Buscar producto" aria-label="Buscar producto">
+  <div class="cats" id="cats"></div>
+</div>
+
+<main id="lista"></main>
+
+<a class="whatsapp" id="whatsapp" href="#" target="_blank" rel="noopener" aria-label="Escribinos por WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.6-.3z"/></svg>
+</a>
+
+<div class="pedido" id="pedido">
+  <div>
+    <div class="total" id="total"></div>
+    <div class="cuenta" id="cuenta"></div>
+  </div>
+  <button id="enviar">Enviar pedido por WhatsApp</button>
+</div>
+
+<script>
+  // Tu número de WhatsApp (código de país + área + número, sin + ni espacios)
+  const WHATSAPP = '5491136830200';
+
+  let productos = [];
+  const cantidades = {};
+  let categoria = 'Todos';
+
+  const $ = (id) => document.getElementById(id);
+  const plata = (n) => '$ ' + Number(n).toLocaleString('es-AR');
+  // Cada producto puede tener: nombre, precio, foto, descripcion (o presentacion), categoria
+  const detalle = (p) => p.descripcion || p.presentacion || '';
+  const clave = (p) => p.nombre + '|' + detalle(p);
+
+  $('whatsapp').href = 'https://wa.me/' + WHATSAPP + '?text=' +
+    encodeURIComponent('Hola! Vi el catálogo de La Ruta del Bienestar y quería consultar.');
+
+  fetch('/api/productos')
+    .then((r) => r.json())
+    .then((d) => { productos = d.productos || []; armarCategorias(); pintar(); })
+    .catch(() => { $('lista').innerHTML = '<p class="vacio">No se pudo cargar el catálogo.</p>'; });
+
+  // Stock: marca "Sin stock" solo en productos contados por el dueño.
+  // Si no responde, el catálogo queda normal.
+  const STOCK_URL = 'https://script.google.com/macros/s/AKfycbzV_CxuKYu5uEjWOswbSZZLatlc8i5TvjT-Ldt_Ihre0RS-18eZy4AaOKvFmpfY-ikp/exec';
+  let sinStock = new Set();
+  (function cargarStock() {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const corte = setTimeout(() => ctl && ctl.abort(), 8000);
+    fetch(STOCK_URL + '?accion=sinstock', ctl ? { signal: ctl.signal } : {})
+      .then((r) => r.json())
+      .then((d) => {
+        clearTimeout(corte);
+        if (!d || !d.ok || !Array.isArray(d.sinStock)) return;
+        sinStock = new Set(d.sinStock);
+        productos.forEach((p) => { if (sinStock.has(p.nombre)) delete cantidades[clave(p)]; });
+        if (productos.length) pintar();
+      })
+      .catch(() => {});
+  })();
+
+  function armarCategorias() {
+    const lista = [...new Set(productos.map((p) => p.categoria).filter(Boolean))];
+    $('cats').innerHTML = '';
+    if (lista.length < 2) return;
+    ['Todos', ...lista].forEach((n) => {
+      const b = document.createElement('button');
+      b.textContent = n;
+      b.setAttribute('aria-pressed', n === categoria);
+      b.onclick = () => { categoria = n; armarCategorias(); pintar(); };
+      $('cats').appendChild(b);
+    });
+  }
+
+  function pintar() {
+    const q = $('buscar').value.trim().toLowerCase();
+    const lista = $('lista');
+    lista.innerHTML = '';
+    const visibles = productos.filter((p) =>
+      (categoria === 'Todos' || p.categoria === categoria) &&
+      p.nombre.toLowerCase().includes(q));
+
+    if (!visibles.length) {
+      lista.innerHTML = '<p class="vacio">No hay productos con esa búsqueda.</p>';
+      return actualizarPedido();
+    }
+
+    visibles.forEach((p) => {
+      const t = document.createElement('article');
+      t.className = 'tarjeta';
+      t.innerHTML =
+        '<div class="foto"></div>' +
+        '<div class="nombre"></div>' +
+        '<p class="desc"></p>' +
+        '<div class="pie"><div class="precio"></div><div class="control"></div></div>';
+      const foto = t.querySelector('.foto');
+      if (p.foto) {
+        const img = document.createElement('img');
+        img.src = p.foto; img.alt = p.nombre; img.loading = 'lazy';
+        img.onerror = () => { foto.textContent = 'Sin foto'; };
+        foto.appendChild(img);
+      } else {
+        foto.textContent = 'Sin foto';
+      }
+      t.querySelector('.nombre').textContent = p.nombre;
+      const d = t.querySelector('.desc');
+      if (detalle(p)) d.textContent = detalle(p); else d.remove();
+      t.querySelector('.precio').textContent = plata(p.precio);
+      pintarControl(t.querySelector('.control'), p);
+      lista.appendChild(t);
+    });
+    actualizarPedido();
+  }
+
+  function pintarControl(caja, p) {
+    const id = clave(p);
+    const c = cantidades[id] || 0;
+    caja.innerHTML = '';
+    if (sinStock.has(p.nombre)) {
+      const s = document.createElement('span');
+      s.className = 'sinstock'; s.textContent = 'Sin stock';
+      caja.appendChild(s);
+      caja.closest('.tarjeta') && caja.closest('.tarjeta').classList.add('agotado');
+      return;
+    }
+    if (!c) {
+      const b = document.createElement('button');
+      b.className = 'agregar'; b.textContent = '+';
+      b.setAttribute('aria-label', 'Agregar ' + p.nombre);
+      b.onclick = () => cambiar(p, 1, caja);
+      caja.appendChild(b);
+      return;
+    }
+    const w = document.createElement('div');
+    w.className = 'cant';
+    w.innerHTML = '<button aria-label="Quitar uno">−</button><span></span><button aria-label="Agregar uno">+</button>';
+    w.querySelector('span').textContent = c;
+    const [menos, mas] = w.querySelectorAll('button');
+    menos.onclick = () => cambiar(p, -1, caja);
+    mas.onclick = () => cambiar(p, 1, caja);
+    caja.appendChild(w);
+  }
+
+  function cambiar(p, d, caja) {
+    const id = clave(p);
+    cantidades[id] = Math.max(0, (cantidades[id] || 0) + d);
+    pintarControl(caja, p);
+    actualizarPedido();
+  }
+
+  function itemsPedido() {
+    return productos.map((p) => ({ p, c: cantidades[clave(p)] || 0 })).filter((x) => x.c > 0);
+  }
+
+  function actualizarPedido() {
+    const items = itemsPedido();
+    const total = items.reduce((s, x) => s + x.c * x.p.precio, 0);
+    const unidades = items.reduce((s, x) => s + x.c, 0);
+    $('pedido').classList.toggle('visible', unidades > 0);
+    document.body.classList.toggle('con-pedido', unidades > 0);
+    $('num').textContent = unidades;
+    $('num').classList.toggle('visible', unidades > 0);
+    $('total').textContent = 'Total ' + plata(total);
+    $('cuenta').textContent = unidades + (unidades === 1 ? ' producto' : ' productos');
+  }
+
+  $('buscar').addEventListener('input', pintar);
+
+  $('carrito').onclick = () => {
+    if (!itemsPedido().length) { alert('Todavía no agregaste productos. Tocá el + en los que quieras.'); return; }
+    $('enviar').focus();
+  };
+
+  $('enviar').onclick = () => {
+    const items = itemsPedido();
+    if (!items.length) return;
+    const total = items.reduce((s, x) => s + x.c * x.p.precio, 0);
+    const lineas = items.map((x) =>
+      '- ' + x.c + ' x ' + x.p.nombre + (detalle(x.p) ? ' (' + detalle(x.p) + ')' : '') + ' ' + plata(x.c * x.p.precio));
+    const texto = 'Hola! Quiero hacer este pedido:\n' + lineas.join('\n') + '\nTotal: ' + plata(total);
+    window.location.href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(texto);
+  };
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js");}</script>
+</body>
+</html>
