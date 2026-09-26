@@ -61,6 +61,12 @@
     display: none;
   }
   .carrito .num.visible { display: block; }
+  .volver-panel { display: none; max-width: 640px; margin: 10px auto 0; padding: 0 16px; }
+  .volver-panel.visible { display: block; }
+  .volver-panel a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px;
+    border: 1px solid var(--linea); border-radius: 10px; background: var(--papel);
+    color: var(--azul); font-size: .9rem; font-weight: 600; text-decoration: none; }
+  .volver-panel a:focus-visible { outline: 3px solid var(--verde); outline-offset: 2px; }
   .buscador { padding: 14px 16px 4px; max-width: 640px; margin: 0 auto; }
   input[type="search"] {
     width: 100%; font: inherit;
@@ -160,6 +166,13 @@
     <span class="num" id="num">0</span>
   </button>
 </header>
+
+<div class="volver-panel" id="volver-panel"><a href="/admin.html">← Volver al panel</a></div>
+<script>
+  if (new URLSearchParams(window.location.search).get('from') === 'panel') {
+    document.getElementById('volver-panel').classList.add('visible');
+  }
+</script>
 
 <div class="buscador">
   <input type="search" id="buscar" placeholder="Buscar producto" aria-label="Buscar producto">
