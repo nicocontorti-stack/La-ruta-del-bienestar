@@ -5,6 +5,7 @@ const path = require('path');
 const PORT = process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, 'public');
 const DATOS = path.join(__dirname, 'productos.json');
+const CATALOGO_API = 'https://script.google.com/macros/s/AKfycbzV_CxuKYu5uEjWOswbSZZLatlc8i5TvjT-Ldt_Ihre0RS-18eZy4AaOKvFmpfY-ikp/exec?accion=catalogo';
 
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',
@@ -24,16 +25,21 @@ http.createServer((req, res) => {
     return res.end('OK');
   }
 
-  // Se lee en cada visita: si editás productos.json, se actualiza solo
+  // Fuente persistente: hoja Catálogo del Apps Script. Si falla, NO mostrar
+  // el JSON viejo: ocultaría productos nuevos o mostraría precios obsoletos.
   if (ruta === '/api/productos') {
-    fs.readFile(DATOS, (err, data) => {
-      if (err) {
-        res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-        return res.end('No se pudo leer productos.json');
-      }
-      res.writeHead(200, { 'Content-Type': TIPOS['.json'] });
-      res.end(data);
-    });
+    fetch(CATALOGO_API, { signal: AbortSignal.timeout(12000) })
+      .then(async (r) => {
+        if (!r.ok) throw new Error('Catálogo no disponible');
+        const j = await r.json();
+        if (!Array.isArray(j.productos)) throw new Error('Respuesta inválida');
+        res.writeHead(200, { 'Content-Type': TIPOS['.json'], 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ productos: j.productos }));
+      })
+      .catch(() => {
+        res.writeHead(503, { 'Content-Type': TIPOS['.json'], 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ error: 'El catálogo no está disponible. Probá de nuevo en unos minutos.' }));
+      });
     return;
   }
 
