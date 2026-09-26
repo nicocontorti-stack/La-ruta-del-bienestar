@@ -210,19 +210,6 @@
 
   <!-- Stock -->
   <section id="v-stock" class="oculto">
-    <div id="stock-bajo" class="card aviso oculto"></div>
-    <div class="card">
-      <h2>Stock</h2>
-      <button class="prim" onclick="abrirProducto()">+ Agregar producto</button>
-      <button style="width:100%;margin:8px 0 12px" onclick="abrirListaProductos()">Editar productos</button>
-      <p id="sin-contar" style="color:#555;margin:0 0 8px"></p>
-      <div class="fila" style="margin-bottom:8px">
-        <button onclick="abrirConteo()">🧮 Contar stock</button>
-      </div>
-      <p class="res-nota">Usá + y − para cambiar de a una unidad. "Ajustar" te deja escribir la cantidad que tenés ahora.</p>
-      <input id="buscar-stock" placeholder="Buscar producto..." oninput="pintarStock()">
-      <table id="tabla-stock" style="margin-top:8px"></table>
-    </div>
     <div id="lista-productos" class="card oculto">
       <h2>Editar productos</h2>
       <input id="buscar-producto" placeholder="Buscar producto..." oninput="pintarListaProductos()">
@@ -246,6 +233,19 @@
       <p class="editor-ayuda">Por ahora, para agregar una foto desde el teléfono, primero necesitás un enlace público a la imagen. No guarda archivos de la galería.</p>
       <button class="prim" id="btn-guardar-producto" onclick="guardarProducto()">Guardar producto</button>
       <button style="width:100%;margin-top:8px" onclick="cerrarProducto()">Cancelar</button>
+    </div>
+    <div id="stock-bajo" class="card aviso oculto"></div>
+    <div class="card">
+      <h2>Stock</h2>
+      <button class="prim" onclick="abrirProducto()">+ Agregar producto</button>
+      <button style="width:100%;margin:8px 0 12px" onclick="abrirListaProductos()">Editar productos</button>
+      <p id="sin-contar" style="color:#555;margin:0 0 8px"></p>
+      <div class="fila" style="margin-bottom:8px">
+        <button onclick="abrirConteo()">🧮 Contar stock</button>
+      </div>
+      <p class="res-nota">Usá + y − para cambiar de a una unidad. "Ajustar" te deja escribir la cantidad que tenés ahora.</p>
+      <input id="buscar-stock" placeholder="Buscar producto..." oninput="pintarStock()">
+      <table id="tabla-stock" style="margin-top:8px"></table>
     </div>
     <div id="conteo" class="card oculto">
       <h2>Contar stock</h2>
