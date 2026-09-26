@@ -227,7 +227,7 @@
         <div><label for="prod-costo">Costo por unidad $ *</label><input id="prod-costo" type="number" inputmode="decimal" min="0" step="0.01"></div>
       </div>
       <label for="prod-stock">Stock actual (unidades) *</label><input id="prod-stock" type="number" inputmode="numeric" min="0" step="1">
-      <label for="prod-categoria">Categoría *</label><select id="prod-categoria"><option>Dietética</option><option>Celíacos</option></select>
+      <label for="prod-categoria">Categoría *</label><input id="prod-categoria" list="lista-categorias" maxlength="40" autocomplete="off" placeholder="Ej: Dietética"><datalist id="lista-categorias"></datalist>
       <label for="prod-codigo">Código (opcional)</label><input id="prod-codigo" maxlength="200">
       <label for="prod-foto">Enlace HTTPS de foto (opcional)</label><input id="prod-foto" type="url" inputmode="url" placeholder="https://..."></input>
       <img id="prod-foto-previa" class="foto-previa" alt="Vista previa de foto">
@@ -425,6 +425,13 @@
 
   // ---------- Editor de productos ----------
   let editandoProducto = null;
+  // Las categorías salen del catálogo mismo: se puede elegir una existente
+  // o escribir una nueva, que queda guardada en la hoja con el producto.
+  function pintarCategorias() {
+    const set = new Set(['Dietética', 'Celíacos']);
+    catalogo.forEach((p) => { if (p.categoria) set.add(p.categoria); });
+    $('lista-categorias').innerHTML = [...set].map((c) => `<option value="${esc(c)}"></option>`).join('');
+  }
   function abrirProducto(nombre) {
     const p = nombre ? catalogo.find((x) => x.nombre === nombre) : null;
     if (nombre && !p) return aviso('Producto no encontrado en el catálogo', '#b3261e');
@@ -467,8 +474,10 @@
     if ($('prod-stock').value === '' || !Number.isInteger(stock) || stock < 0) return aviso('Revisá el stock (unidades enteras)', '#b3261e');
     const foto = $('prod-foto').value.trim();
     if (foto && !/^https:\/\/[^\s<>"']+$/i.test(foto)) return aviso('Usá un enlace HTTPS para la foto', '#b3261e');
+    const categoria = $('prod-categoria').value.trim().replace(/\s+/g, ' ') || 'Dietética';
+    if (categoria.length > 40) return aviso('La categoría puede tener hasta 40 caracteres', '#b3261e');
     const payload = { original: editandoProducto, nombre, descripcion: $('prod-descripcion').value.trim(), precio, costo, stock,
-      categoria: $('prod-categoria').value, codigo: $('prod-codigo').value.trim(), foto };
+      categoria, codigo: $('prod-codigo').value.trim(), foto };
     $('btn-guardar-producto').disabled = true;
     try {
       await api(editandoProducto ? 'actualizarProducto' : 'crearProducto', payload);
@@ -731,7 +740,7 @@
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('activo', b.dataset.v === v));
     window.scrollTo(0, 0);
   }
-  function pintarTodo() { pintarDeudas(); pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarNumeros(); }
+  function pintarTodo() { pintarDeudas(); pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarNumeros(); pintarCategorias(); }
   document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => mostrar(b.dataset.v)));
   document.querySelectorAll('#pago button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
   document.querySelectorAll('#pago-rapido button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago-rapido button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
