@@ -513,7 +513,7 @@
     try { await navigator.clipboard.writeText(ENLACE_CATALOGO); aviso('Enlace copiado. Pegalo en WhatsApp ✅', '#2f6b2f'); }
     catch (e) { prompt('Copiá el enlace del catálogo:', ENLACE_CATALOGO); }
   }
-  function abrirCatalogo() { window.open(ENLACE_CATALOGO, '_blank', 'noopener'); }
+  function abrirCatalogo() { window.location.href = '/?from=panel'; }
   function pintarResumen() {
     const inicio = new Date(); inicio.setHours(0, 0, 0, 0);
     const ventas = (datos.ventas || []).filter((v) => Number(v.fecha) >= +inicio && Number(v.fecha) < +inicio + 86400000);
