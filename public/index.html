@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3F6B2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="La Ruta">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <title>La Ruta del Bienestar | Dietética por mayor</title>
 <meta name="description" content="Catálogo de La Ruta del Bienestar. Mirá los productos y hacé tu pedido por WhatsApp.">
 <style>
@@ -336,5 +343,6 @@
     window.location.href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(texto);
   };
 </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js");}</script>
 </body>
 </html>
