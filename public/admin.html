@@ -39,6 +39,9 @@
   .qty { display: flex; align-items: center; gap: 6px; }
   .qty button { width: 38px; height: 38px; padding: 0; font-size: 20px; }
   .qty input { width: 64px; text-align: center; padding: 8px 4px; }
+  .stock-acciones { display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: wrap; }
+  .stock-acciones button { min-width: 40px; min-height: 42px; padding: 6px 9px; font-weight: 700; }
+  .stock-acciones .stock-manual { font-size: 13px; font-weight: 500; }
   .precio { width: 96px !important; padding: 8px !important; }
   .total { font-size: 22px; font-weight: 700; text-align: right; margin-top: 10px; }
   .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -188,6 +191,7 @@
       <div class="fila" style="margin-bottom:8px">
         <button onclick="abrirConteo()">🧮 Contar stock</button>
       </div>
+      <p class="res-nota">Usá + y − para cambiar de a una unidad. "Ajustar" te deja escribir la cantidad que tenés ahora.</p>
       <input id="buscar-stock" placeholder="Buscar producto..." oninput="pintarStock()">
       <table id="tabla-stock" style="margin-top:8px"></table>
     </div>
@@ -439,6 +443,21 @@
   }
 
   // ---------- Stock ----------
+  let cambiandoStock = false;
+  async function pasoStock(nombre, delta) {
+    if (cambiandoStock) return;
+    const info = infoStock(nombre);
+    if (!info.contado) return aviso('Primero contá este producto con Ajustar', '#b3261e');
+    if (delta < 0 && Number(info.stock) < 1) return aviso('No se puede bajar de 0', '#b3261e');
+    cambiandoStock = true;
+    document.querySelectorAll('.stock-acciones button').forEach((b) => (b.disabled = true));
+    try {
+      await api('ajuste', { producto: nombre, cantidad: delta, motivo: 'Ajuste manual de stock' });
+      await cargar();
+      aviso('Stock actualizado ✅', '#2f6b2f');
+    } catch (e) { aviso('No se pudo cambiar el stock: ' + e.message, '#b3261e'); }
+    finally { cambiandoStock = false; document.querySelectorAll('.stock-acciones button').forEach((b) => (b.disabled = false)); }
+  }
   function pintarStock() {
     const todos = todosLosProductos();
     const bajos = todos.filter((p) => p.contado && p.stock <= p.minimo);
@@ -453,7 +472,7 @@
       const n = JSON.stringify(p.nombre).replace(/"/g, '&quot;');
       const st = p.contado ? `<span class="${p.stock <= p.minimo ? 'bajo' : ''}">${cant(p.stock)}</span>` : '<span style="color:#888">sin contar</span>';
       return `<tr><td>${esc(p.nombre)}<br><small style="color:#666">Aviso con ${cant(p.minimo)} o menos</small></td><td class="n">${st}</td>
-        <td class="n"><button class="chip" onclick="ajustar(${n})">Ajustar</button><br><button class="chip" style="margin-top:4px" onclick="minimo(${n})">Aviso</button></td></tr>`;
+        <td class="n"><div class="stock-acciones"><button aria-label="Restar una unidad a ${esc(p.nombre)}" onclick="pasoStock(${n},-1)" ${!p.contado || Number(p.stock) < 1 ? 'disabled' : ''}>−</button><button aria-label="Sumar una unidad a ${esc(p.nombre)}" onclick="pasoStock(${n},1)" ${!p.contado ? 'disabled' : ''}>+</button><button class="stock-manual" onclick="ajustar(${n})">Ajustar</button><button class="stock-manual" onclick="minimo(${n})">Aviso</button></div></td></tr>`;
     }).join('');
   }
   async function ajustar(nombre) {
