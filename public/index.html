@@ -211,8 +211,8 @@
     encodeURIComponent('Hola! Vi el catálogo de La Ruta del Bienestar y quería consultar.');
 
   fetch('/api/productos')
-    .then((r) => r.json())
-    .then((d) => { productos = d.productos || []; armarCategorias(); pintar(); })
+    .then((r) => { if (!r.ok) throw new Error('Catálogo no disponible'); return r.json(); })
+    .then((d) => { if (!Array.isArray(d.productos)) throw new Error('Catálogo no disponible'); productos = d.productos; armarCategorias(); pintar(); })
     .catch(() => { $('lista').innerHTML = '<p class="vacio">No se pudo cargar el catálogo.</p>'; });
 
   // Stock: marca "Sin stock" solo en productos contados por el dueño.
