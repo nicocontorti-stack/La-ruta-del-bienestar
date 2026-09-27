@@ -229,9 +229,10 @@
       <label for="prod-stock">Stock actual (unidades) *</label><input id="prod-stock" type="number" inputmode="numeric" min="0" step="1">
       <label for="prod-categoria">Categoría *</label><input id="prod-categoria" list="lista-categorias" maxlength="40" autocomplete="off" placeholder="Ej: Dietética"><datalist id="lista-categorias"></datalist>
       <label for="prod-codigo">Código (opcional)</label><input id="prod-codigo" maxlength="200">
-      <label for="prod-foto">Enlace HTTPS de foto (opcional)</label><input id="prod-foto" type="url" inputmode="url" placeholder="https://..."></input>
+      <label for="prod-archivo">Foto de tu galería (opcional)</label><input id="prod-archivo" type="file" accept="image/*">
+      <p class="editor-ayuda">Elegí una foto del teléfono. Se guarda en tu Drive y aparece en el catálogo al guardar el producto.</p>
+      <label for="prod-foto">O pegá un enlace HTTPS (opcional)</label><input id="prod-foto" type="url" inputmode="url" placeholder="https://...">
       <img id="prod-foto-previa" class="foto-previa" alt="Vista previa de foto">
-      <p class="editor-ayuda">Por ahora, para agregar una foto desde el teléfono, primero necesitás un enlace público a la imagen. No guarda archivos de la galería.</p>
       <button class="prim" id="btn-guardar-producto" onclick="guardarProducto()">Guardar producto</button>
       <button style="width:100%;margin-top:8px" onclick="cerrarProducto()">Cancelar</button>
     </div>
@@ -447,6 +448,7 @@
     $('prod-categoria').value = p ? p.categoria || 'Dietética' : 'Dietética';
     $('prod-codigo').value = p ? p.codigo || '' : '';
     $('prod-foto').value = p ? p.foto || '' : '';
+    $('prod-archivo').value = '';
     actualizarFotoProducto();
     $('lista-productos').classList.add('oculto');
     $('editor-producto').classList.remove('oculto');
@@ -460,10 +462,28 @@
     $('resultados-productos').innerHTML = catalogo.filter((p) => p.nombre.toLocaleLowerCase('es').includes(q))
       .map((p) => `<button style="display:block;width:100%;text-align:left;margin:5px 0" onclick="abrirProducto(${JSON.stringify(p.nombre).replace(/"/g, '&quot;')})">${esc(p.nombre)} · ${plata(p.precio)}</button>`).join('') || '<p>No hay productos con ese nombre.</p>';
   }
+  let previaArchivo = null;
   function actualizarFotoProducto() {
-    const img = $('prod-foto-previa'), url = $('prod-foto').value.trim();
-    img.style.display = /^https:\/\//i.test(url) ? 'block' : 'none';
-    if (img.style.display === 'block') img.src = url;
+    const img = $('prod-foto-previa'), archivo = $('prod-archivo').files[0], url = $('prod-foto').value.trim();
+    if (previaArchivo) { URL.revokeObjectURL(previaArchivo); previaArchivo = null; }
+    if (archivo) previaArchivo = URL.createObjectURL(archivo);
+    img.style.display = archivo || /^https:\/\//i.test(url) ? 'block' : 'none';
+    if (img.style.display === 'block') img.src = previaArchivo || url;
+  }
+  async function prepararFoto(archivo) {
+    if (!archivo.type.startsWith('image/')) throw new Error('Elegí una imagen de tu galería');
+    // Reducir fotos grandes antes de enviarlas; Chrome Android respeta la orientación EXIF.
+    const original = await createImageBitmap(archivo).catch(() => { throw new Error('No se pudo abrir esa imagen. Probá con una foto JPG o PNG.'); });
+    const max = 1400, escala = Math.min(1, max / Math.max(original.width, original.height));
+    const lienzo = document.createElement('canvas');
+    lienzo.width = Math.max(1, Math.round(original.width * escala));
+    lienzo.height = Math.max(1, Math.round(original.height * escala));
+    lienzo.getContext('2d').drawImage(original, 0, 0, lienzo.width, lienzo.height);
+    original.close();
+    let calidad = .84, data;
+    do { data = lienzo.toDataURL('image/jpeg', calidad); calidad -= .12; } while (data.length > 2100000 && calidad >= .35);
+    if (data.length > 2100000) throw new Error('La foto es demasiado grande. Probá con otra imagen.');
+    return data.split(',')[1];
   }
   async function guardarProducto() {
     const nombre = $('prod-nombre').value.trim().replace(/\s+/g, ' ');
@@ -472,7 +492,7 @@
     if (!$('prod-precio').value || !Number.isFinite(precio) || precio <= 0) return aviso('Revisá el precio de venta', '#b3261e');
     if ($('prod-costo').value === '' || !Number.isFinite(costo) || costo < 0) return aviso('Revisá el costo por unidad', '#b3261e');
     if ($('prod-stock').value === '' || !Number.isInteger(stock) || stock < 0) return aviso('Revisá el stock (unidades enteras)', '#b3261e');
-    const foto = $('prod-foto').value.trim();
+    let foto = $('prod-foto').value.trim();
     if (foto && !/^https:\/\/[^\s<>"']+$/i.test(foto)) return aviso('Usá un enlace HTTPS para la foto', '#b3261e');
     const categoria = $('prod-categoria').value.trim().replace(/\s+/g, ' ') || 'Dietética';
     if (categoria.length > 40) return aviso('La categoría puede tener hasta 40 caracteres', '#b3261e');
@@ -480,6 +500,14 @@
       categoria, codigo: $('prod-codigo').value.trim(), foto };
     $('btn-guardar-producto').disabled = true;
     try {
+      const archivo = $('prod-archivo').files[0];
+      if (archivo) {
+        aviso('Subiendo foto...', '#1f4e8c');
+        const subida = await api('subirFoto', { imagen: await prepararFoto(archivo) });
+        foto = subida.foto; payload.foto = foto;
+        $('prod-foto').value = foto;
+        $('prod-archivo').value = '';
+      }
       await api(editandoProducto ? 'actualizarProducto' : 'crearProducto', payload);
       const respuesta = await fetch('/api/productos', { cache: 'no-store' });
       if (!respuesta.ok) throw new Error('No se pudo comprobar el catálogo. Recargá antes de reintentar.');
@@ -747,6 +775,7 @@
   $('pago-cliente').onchange = actualizarSaldoPago;
   document.querySelectorAll('#periodo button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#periodo button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); periodo = b.dataset.v; pintarNumeros(); }));
   $('prod-foto').oninput = actualizarFotoProducto;
+  $('prod-archivo').onchange = actualizarFotoProducto;
   $('compra-cant').oninput = calcCompra; $('compra-costo').oninput = calcCompra;
   $('pin').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
   iniciar();
