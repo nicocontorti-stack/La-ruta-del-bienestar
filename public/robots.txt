@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
-Disallow: /api/
-Sitemap: https://la-ruta-del-bienestar.onrender.com/sitemap.xml
+Sitemap: https://larutadelbienestar.ar/sitemap.xml
