@@ -228,6 +228,13 @@
       </div>
     </div>
     <div class="card">
+      <h2>Boleta completa del proveedor</h2>
+      <p class="res-nota">Para cargar la boleta entera como UNA compra (varios productos). No toca el stock: eso lo ajustás en Stock.</p>
+      <label>Total de la boleta $</label><input id="boleta-total" type="number" inputmode="decimal" min="0" step="any">
+      <label>Proveedor / detalle (opcional)</label><input id="boleta-prov" placeholder="Ej: Alohomora, boleta 0001-123">
+      <button class="prim" id="btn-boleta" onclick="guardarBoleta()">Guardar boleta</button>
+    </div>
+    <div class="card">
       <h2>Gasto general</h2>
       <p class="res-nota">Para gastos sueltos que no son de un producto: papel, planillas, bolsas, etc. Suma en Números junto con las compras.</p>
       <label>Qué fue</label><input id="gasto-detalle" placeholder="Ej: papel, planillas...">
@@ -757,6 +764,20 @@
     } catch (e) { aviso(e.message, '#b3261e'); }
     $('btn-compra').disabled = false;
   }
+
+  // ---------- Boleta completa (una sola compra, sin stock) ----------
+  async function guardarBoleta() {
+    const total = +$('boleta-total').value;
+    if (!(total > 0)) return aviso('Poné el total de la boleta', '#b3261e');
+    $('btn-boleta').disabled = true;
+    try {
+      await api('compra', { producto: 'Boleta proveedor', cantidad: 1, costo: total, proveedor: $('boleta-prov').value });
+      $('boleta-total').value = ''; $('boleta-prov').value = '';
+      aviso('Boleta guardada ✅', '#2f6b2f');
+      await cargar();
+    } catch (e) { aviso(e.message, '#b3261e'); }
+    $('btn-boleta').disabled = false;
+  }
   async function guardarGasto() {
     const detalle = $('gasto-detalle').value.trim(), monto = +$('gasto-monto').value;
     if (!detalle) return aviso('Poné qué fue el gasto', '#b3261e');
@@ -946,6 +967,7 @@
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js");}</script>
 </body>
 </html>
+
 
 
 
