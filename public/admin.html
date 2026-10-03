@@ -219,8 +219,8 @@
       <div id="compra-form" class="oculto">
         <p><b id="compra-prod"></b></p>
         <div class="fila">
-          <div><label>Cantidad</label><input id="compra-cant" type="number" inputmode="decimal" min="0" step="any"></div>
-          <div><label>Costo por unidad $</label><input id="compra-costo" type="number" inputmode="decimal" min="0" step="any"></div>
+          <div><label>Cantidad</label><input id="compra-cant" type="text" inputmode="decimal"></div>
+          <div><label>Costo por unidad $</label><input id="compra-costo" type="text" inputmode="decimal"></div>
         </div>
         <label>Proveedor (opcional)</label><input id="compra-prov">
         <div class="total">Total: <span id="compra-total">$ 0</span></div>
@@ -229,8 +229,8 @@
     </div>
     <div class="card">
       <h2>Boleta completa del proveedor</h2>
-      <p class="res-nota">Para cargar la boleta entera como UNA compra (varios productos). No toca el stock: eso lo ajustás en Stock.</p>
-      <label>Total de la boleta $</label><input id="boleta-total" type="number" inputmode="decimal" min="0" step="any">
+      <p class="res-nota">Para cargar la boleta entera como UNA compra (varios productos). Suma en Compraste. No toca el stock: eso lo ajustás en Stock.</p>
+      <label>Total de la boleta $</label><input id="boleta-total" type="text" inputmode="decimal" placeholder="Ej: 195.329">
       <label>Proveedor / detalle (opcional)</label><input id="boleta-prov" placeholder="Ej: Alohomora, boleta 0001-123">
       <button class="prim" id="btn-boleta" onclick="guardarBoleta()">Guardar boleta</button>
     </div>
@@ -238,7 +238,7 @@
       <h2>Gasto general</h2>
       <p class="res-nota">Para gastos sueltos que no son de un producto: papel, planillas, bolsas, etc. Suma en Números junto con las compras.</p>
       <label>Qué fue</label><input id="gasto-detalle" placeholder="Ej: papel, planillas...">
-      <label>Monto $</label><input id="gasto-monto" type="number" inputmode="decimal" min="0" step="any">
+      <label>Monto $</label><input id="gasto-monto" type="text" inputmode="decimal">
       <button class="prim" id="btn-gasto" onclick="guardarGasto()">Guardar gasto</button>
     </div>
   </section>
@@ -750,9 +750,9 @@
     $('res-compra').innerHTML = ''; $('buscar-compra').value = '';
     $('compra-form').classList.remove('oculto'); calcCompra();
   }
-  function calcCompra() { $('compra-total').textContent = plata((+$('compra-cant').value || 0) * (+$('compra-costo').value || 0)); }
+  function calcCompra() { $('compra-total').textContent = plata((numAR($('compra-cant').value) || 0) * (numAR($('compra-costo').value) || 0)); }
   async function guardarCompra() {
-    const c = +$('compra-cant').value, costo = +$('compra-costo').value;
+    const c = numAR($('compra-cant').value), costo = numAR($('compra-costo').value);
     if (!compraSel || !(c > 0)) return aviso('Poné la cantidad', '#b3261e');
     if (!(costo >= 0)) return aviso('Poné el costo', '#b3261e');
     $('btn-compra').disabled = true;
@@ -765,13 +765,21 @@
     $('btn-compra').disabled = false;
   }
 
+  // Número en formato argentino: "195.329" = 195329, "195.329,50" = 195329.5, "195329" = 195329
+  function numAR(t) {
+    t = String(t || '').replace(/[\s$]/g, '');
+    if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    const n = Number(t); return isNaN(n) ? 0 : n;
+  }
   // ---------- Boleta completa (una sola compra, sin stock) ----------
   async function guardarBoleta() {
-    const total = +$('boleta-total').value;
+    const total = numAR($('boleta-total').value);
     if (!(total > 0)) return aviso('Poné el total de la boleta', '#b3261e');
     $('btn-boleta').disabled = true;
     try {
-      await api('compra', { producto: 'Boleta proveedor', cantidad: 1, costo: total, proveedor: $('boleta-prov').value });
+      const prov = $('boleta-prov').value.trim().replace(/\s+/g, ' ').replace(/^[=+@-]+/, '');
+      await api('gasto', { detalle: ('Boleta proveedor' + (prov ? ' - ' + prov : '')).slice(0, 100), monto: total });
       $('boleta-total').value = ''; $('boleta-prov').value = '';
       aviso('Boleta guardada ✅', '#2f6b2f');
       await cargar();
@@ -779,7 +787,7 @@
     $('btn-boleta').disabled = false;
   }
   async function guardarGasto() {
-    const detalle = $('gasto-detalle').value.trim(), monto = +$('gasto-monto').value;
+    const detalle = $('gasto-detalle').value.trim(), monto = numAR($('gasto-monto').value);
     if (!detalle) return aviso('Poné qué fue el gasto', '#b3261e');
     if (!(monto > 0)) return aviso('Poné el monto', '#b3261e');
     $('btn-gasto').disabled = true;
