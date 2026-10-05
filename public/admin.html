@@ -269,6 +269,7 @@
       <img id="prod-foto-previa" class="foto-previa" alt="Vista previa de foto">
       <button class="prim" id="btn-guardar-producto" onclick="guardarProducto()">Guardar producto</button>
       <button style="width:100%;margin-top:8px" onclick="cerrarProducto()">Cancelar</button>
+      <button id="btn-eliminar-producto" class="oculto" style="width:100%;margin-top:8px;background:#b3261e;color:#fff;border:0;padding:12px;border-radius:10px;font-weight:700" onclick="eliminarProducto()">Eliminar producto</button>
     </div>
     <div id="stock-bajo" class="card aviso oculto"></div>
     <div class="card">
@@ -539,6 +540,7 @@
     const p = nombre ? catalogo.find((x) => x.nombre === nombre) : null;
     if (nombre && !p) return aviso('Producto no encontrado en el catálogo', '#b3261e');
     editandoProducto = p ? p.nombre : null;
+    $('btn-eliminar-producto').classList.toggle('oculto', !p);
     $('titulo-producto').textContent = p ? 'Editar producto' : 'Nuevo producto';
     $('nota-producto').textContent = p ? 'El nombre no se puede cambiar para conservar sus ventas y movimientos.' : 'Completá los datos para mostrarlo en el catálogo y llevar su stock.';
     $('prod-nombre').value = p ? p.nombre : '';
@@ -620,6 +622,19 @@
       cerrarProducto(); aviso('Producto guardado ✅', '#2f6b2f');
     } catch (e) { aviso(e.message, '#b3261e'); }
     finally { $('btn-guardar-producto').disabled = false; }
+  }
+
+  async function eliminarProducto() {
+    if (!editandoProducto) return;
+    const nombre = editandoProducto;
+    if (!confirm('¿Eliminar "' + nombre + '"?\nSale del catálogo y del stock. Las ventas y compras anteriores se mantienen.')) return;
+    $('btn-eliminar-producto').disabled = true;
+    try {
+      await api('eliminarProducto', { nombre });
+      await cargar();
+      cerrarProducto(); aviso('Producto eliminado ✅', '#2f6b2f');
+    } catch (e) { aviso(e.message, '#b3261e'); }
+    $('btn-eliminar-producto').disabled = false;
   }
 
   // ---------- Vender ----------
