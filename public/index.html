@@ -230,9 +230,11 @@
   document.documentElement.classList.toggle('catalogo-menor', modo === 'menor');
   document.documentElement.classList.toggle('catalogo-mayor', modo === 'mayor');
   const numeroPedidos = () => modo === 'menor' ? WHATSAPP_MENOR : WHATSAPP_MAYOR;
+  // Productos que solo van en el catálogo por menor (se esconden en mayor).
+  const SOLO_MENOR = ['Pasa de Arándanos', 'Sésamo integral'];
   const productosVisibles = () => modo === 'menor'
     ? productos.filter((p) => Object.prototype.hasOwnProperty.call(PRECIOS_MENOR, p.nombre)).map((p) => ({ ...p, precio: PRECIOS_MENOR[p.nombre] }))
-    : productos;
+    : productos.filter((p) => !SOLO_MENOR.includes(p.nombre));
   function enlaceModo() {
     const url = new URL(window.location.href);
     url.searchParams.delete('from');
