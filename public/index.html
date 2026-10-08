@@ -171,12 +171,8 @@
     background: var(--wa); color: #fff;
   }
 
-  /* v9: control explícito, sin pausa :active que puede quedar pegada en pantallas táctiles. */
-  .banner { position:relative; overflow:hidden; background:var(--verde); color:#fff; padding:10px 0; }
-  .banner-ventana { overflow:hidden; margin-right:90px; }
-  .banner-control { position:absolute; right:4px; top:0; bottom:0; min-width:82px; min-height:44px; border:0; border-left:1px solid #ffffff55; background:var(--verde); color:#fff; font:inherit; font-size:.8rem; cursor:pointer; }
-  .banner-control:focus-visible { outline:2px solid white; outline-offset:-4px; }
-  .banner.pausado .banner-pista { animation-play-state:paused; }
+  /* v10: banner automático, sin botón visible. */
+  .banner { overflow:hidden; background:var(--verde); color:#fff; padding:10px 0; }
   .banner-pista { display:flex; width:max-content; animation:banner-mover 90s linear infinite; }
   .banner-pista span { flex:none; padding:0 14px; font-size:.95rem; font-weight:600; white-space:nowrap; }
   .banner-pista span::after { content:"\2022"; margin-left:28px; opacity:.6; }
@@ -215,10 +211,7 @@
   </button>
 </header>
 
-<div class="banner" id="banner" aria-label="Productos" hidden>
-  <div class="banner-ventana"><div class="banner-pista" id="banner-pista"></div></div>
-  <button class="banner-control" id="banner-control" type="button" aria-label="Pausar movimiento de productos">Pausar</button>
-</div>
+<div class="banner" id="banner" aria-label="Productos" hidden><div class="banner-pista" id="banner-pista"></div></div>
 
 <div class="volver-panel" id="volver-panel"><a href="/admin.html">← Volver al panel</a></div>
 <script>
@@ -497,21 +490,6 @@
 <script>
   // Banner de productos (solo nombres) y pantalla "Quiénes somos"
   (function () {
-    const banner = $('banner');
-    const controlBanner = $('banner-control');
-    // Nico pidió que el banner corra solo. Pausar permite detenerlo desde la página.
-    let moverBanner = true;
-    function actualizarMovimiento() {
-      banner.classList.toggle('pausado', !moverBanner);
-      controlBanner.textContent = moverBanner ? 'Pausar' : 'Iniciar';
-      controlBanner.setAttribute('aria-label', moverBanner ? 'Pausar movimiento de productos' : 'Iniciar movimiento de productos');
-    }
-    controlBanner.onclick = () => {
-      moverBanner = !moverBanner;
-      actualizarMovimiento();
-    };
-    actualizarMovimiento();
-    window.addEventListener('pageshow', actualizarMovimiento);
     let marca = '';
     function armarBanner() {
       const nombres = [...new Set(productosVisibles().map((p) => p.nombre))];
