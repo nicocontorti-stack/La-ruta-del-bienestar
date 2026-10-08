@@ -170,6 +170,32 @@
     padding: 12px 16px; border: 0; border-radius: 12px;
     background: var(--wa); color: #fff;
   }
+
+  .banner { overflow:hidden; background:var(--verde); color:#fff; padding:10px 0; }
+  .banner-pista { display:flex; width:max-content; animation:banner-mover 90s linear infinite; }
+  .banner-pista:active { animation-play-state:paused; }
+  .banner-pista span { flex:none; padding:0 14px; font-size:.95rem; font-weight:600; white-space:nowrap; }
+  .banner-pista span::after { content:"\2022"; margin-left:28px; opacity:.6; }
+  @keyframes banner-mover { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .banner { overflow-x:auto; } .banner-pista { animation:none; } }
+  .saber-mas-caja { max-width:640px; margin:24px auto 0; padding:0 16px; }
+  .saber-mas { width:100%; min-height:52px; border:2px solid var(--verde); border-radius:12px; background:var(--papel); color:var(--verde); font:inherit; font-size:1.05rem; font-weight:700; }
+  .quienes { position:fixed; inset:0; z-index:50; background:var(--fondo); overflow-y:auto; display:none; }
+  .quienes.abierto { display:block; }
+  .quienes-in { max-width:640px; margin:0 auto; padding:16px 18px 48px; }
+  .quienes-in h2 { color:var(--azul); margin:16px 0 8px; }
+  .quienes-in h3 { color:var(--verde); margin:24px 0 6px; }
+  .quienes-in p, .quienes-in li { color:var(--tinta); font-size:1rem; }
+  .quienes-in img, .quienes-in video { width:100%; border-radius:12px; margin:8px 0; }
+  .quienes-cerrar { min-height:44px; padding:8px 14px; border:1px solid var(--linea); border-radius:10px; background:var(--papel); color:var(--azul); font:inherit; font-weight:600; }
+
+
+  .dest { max-width:640px; margin:16px auto 0; padding:0 16px; }
+  .dest h2 { margin:0 0 8px; font-size:1.1rem; color:var(--azul); }
+  .dest-fila { display:flex; gap:12px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory; }
+  .dest-item { flex:none; width:130px; scroll-snap-align:start; border:1px solid var(--linea); border-radius:12px; background:var(--papel); padding:0 0 8px; font:inherit; color:var(--tinta); text-align:center; overflow:hidden; }
+  .dest-item img { width:100%; height:110px; object-fit:cover; display:block; background:#e7ece2; }
+  .dest-item span { display:block; padding:6px 8px 0; font-size:.85rem; font-weight:700; line-height:1.25; }
 </style>
 </head>
 <body>
@@ -185,6 +211,8 @@
     <span class="num" id="num">0</span>
   </button>
 </header>
+
+<div class="banner" id="banner" aria-label="Productos" hidden><div class="banner-pista" id="banner-pista"></div></div>
 
 <div class="volver-panel" id="volver-panel"><a href="/admin.html">← Volver al panel</a></div>
 <script>
@@ -206,7 +234,34 @@
   <div class="cats" id="cats"></div>
 </div>
 
+<section class="dest" id="dest" hidden><h2>Productos destacados</h2><div class="dest-fila" id="dest-fila"></div></section>
+
 <main id="lista"></main>
+
+<div class="saber-mas-caja"><button type="button" class="saber-mas" id="saber-mas">Saber más</button></div>
+
+<div class="quienes" id="quienes" role="dialog" aria-modal="true" aria-label="Quiénes somos">
+  <div class="quienes-in">
+    <button type="button" class="quienes-cerrar" id="quienes-cerrar">← Volver al catálogo</button>
+    <h2>Quiénes somos</h2>
+    <h3>Conocé La Ruta del Bienestar</h3>
+    <p><strong>La Ruta del Bienestar</strong> es una dietética de Berazategui. Vendemos por mayor y por menor frutos secos, semillas, especias, harinas y productos sin TACC. Hábitos sanos para la familia.</p>
+    <h3>Nuestra misión</h3>
+    <p>Que comer sano sea fácil y accesible: buenos productos, precios claros y atención personal, para tu casa o para tu negocio.</p>
+    <h3>Nuestros productos</h3>
+    <ul>
+      <li>Dietética: frutos secos, semillas, especias, harinas, cereales y más.</li>
+      <li>Celíacos: productos sin TACC de proveedores seleccionados.</li>
+      <li>Catálogo por mayor y por menor, con foto de cada producto.</li>
+    </ul>
+    <h3>Nuestra comunidad</h3>
+    <p>Trabajamos con familias, comercios y revendedores de la zona. Seguinos en nuestras redes y sumate.</p>
+    <h3>Contacto</h3>
+    <p>Berazategui, Buenos Aires. Hacé tu pedido o tu consulta por WhatsApp.</p>
+    <a class="saber-mas" id="q-wa" href="#" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Escribinos por WhatsApp</a>
+    <!-- Fotos o videos: agregar acá, por ejemplo <img src="/foto.jpg" alt="Descripción"> -->
+  </div>
+</div>
 
 <a class="whatsapp" id="whatsapp" href="#" target="_blank" rel="noopener" aria-label="Escribinos por WhatsApp">
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.6-.3z"/></svg>
@@ -432,6 +487,62 @@
     const texto = 'Hola! Quiero hacer este pedido ' + (modo === 'menor' ? 'por menor' : 'por mayor') + ':\n' + lineas.join('\n') + '\nTotal: ' + plata(total);
     window.location.href = 'https://wa.me/' + numeroPedidos() + '?text=' + encodeURIComponent(texto);
   };
+</script>
+<script>
+  // Banner de productos (solo nombres) y pantalla "Quiénes somos"
+  (function () {
+    let marca = '';
+    function armarBanner() {
+      const nombres = [...new Set(productosVisibles().map((p) => p.nombre))];
+      const k = modo + '|' + nombres.length;
+      if (k === marca) return;
+      marca = k;
+      const pista = $('banner-pista');
+      pista.innerHTML = '';
+      if (!nombres.length) { $('banner').hidden = true; return; }
+      for (let i = 0; i < 2; i++) nombres.forEach((n) => {
+        const s = document.createElement('span'); s.textContent = n; pista.appendChild(s);
+      });
+      pista.style.animationDuration = Math.max(30, nombres.length * 2.5) + 's';
+      $('banner').hidden = false;
+    }
+    const pintarOriginal = pintar;
+    pintar = function () { pintarOriginal(); armarBanner(); };
+    // Lista elegida por Nico el 7/10/2026. Cambiá esta lista para elegir cuáles salen (nombre exacto del catálogo).
+    let DESTACADOS = ['Almohadas frutilla', 'Almohadas de chocolate', 'Almohadas avellana', 'Mix de frutos secos 100 gr', 'Mix de semillas', 'Provenzal', 'Orégano', 'Pimentón ahumado'];
+    let marcaD = '';
+    function armarDestacados() {
+      const q = $('buscar').value.trim();
+      const vis = productosVisibles();
+      const items = DESTACADOS.map((n) => vis.find((p) => p.nombre === n)).filter(Boolean);
+      const mostrar = items.length && !q && categoria === 'Todos';
+      $('dest').hidden = !mostrar;
+      const k = modo + '|' + items.map((p) => p.nombre).join('~');
+      if (!mostrar || k === marcaD) return;
+      marcaD = k;
+      const fila = $('dest-fila'); fila.innerHTML = '';
+      items.forEach((p) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'dest-item';
+        if (p.foto) { const i = document.createElement('img'); i.src = p.foto; i.alt = p.nombre; i.loading = 'lazy'; b.appendChild(i); }
+        const t = document.createElement('span'); t.textContent = p.nombre; b.appendChild(t);
+        b.onclick = () => { $('buscar').value = p.nombre; pintar(); $('lista').scrollIntoView({ behavior: 'smooth' }); };
+        fila.appendChild(b);
+      });
+    }
+    // Lista editable: pestaña "Destacados" de la planilla, publicada en la web como CSV.
+    // Pegá acá el link CSV publicado. Si queda vacío o falla, se usa la lista de arriba.
+    const URL_DESTACADOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCbLtX6LSt7OtE1fzYmnTjYsYKw9Vq8bRbuAvP3ThCZ9WBBPv7we0Cpk2TksWeF1OUZBNIeAOtItOI/pub?gid=2135210707&single=true&output=csv';
+    if (URL_DESTACADOS) {
+      fetch(URL_DESTACADOS).then((r) => { if (!r.ok) throw 0; return r.text(); }).then((t) => {
+        const nombres = t.split(/\r?\n/).slice(1).map((l) => { const m = l.match(/^\s*(?:"((?:[^"]|"")*)"|([^,]*))/); return ((m && (m[1] !== undefined ? m[1].replace(/""/g, '"') : m[2])) || '').trim(); }).filter(Boolean);
+        if (nombres.length) { DESTACADOS = nombres; marcaD = ''; armarDestacados(); }
+      }).catch(() => {});
+    }
+    pintar = (function (prev) { return function () { prev(); armarDestacados(); }; })(pintar);
+    $('saber-mas').onclick = () => { $('quienes').classList.add('abierto'); $('quienes').scrollTop = 0; };
+    $('q-wa').onclick = () => { $('q-wa').href = $('whatsapp').href; };
+    $('quienes-cerrar').onclick = () => $('quienes').classList.remove('abierto');
+  })();
 </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js");}</script>
 </body>
