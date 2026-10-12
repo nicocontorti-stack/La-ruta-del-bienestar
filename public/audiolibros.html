@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>Audiolibros · La Ruta del Bienestar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3F6B2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Audiolibros">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --fondo: #F6F1E4;
+    --papel: #FFFDF7;
+    --tinta: #26301F;
+    --suave: #6B7260;
+    --linea: #E0D9C3;
+    --verde: #3F6B2E;
+    --verde-osc: #2C4E1F;
+    --verde-cl: #E3EBD6;
+    --miel: #D9A441;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--fondo); color: var(--tinta);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    line-height: 1.4; padding-bottom: env(safe-area-inset-bottom);
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .sans { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header.top {
+    background: var(--verde); color: #fff; padding: 14px 18px;
+    padding-top: calc(14px + env(safe-area-inset-top));
+    display: flex; align-items: center; gap: 12px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header.top img { width: 36px; height: 36px; border-radius: 9px; background: #fff; }
+  header.top .t { flex: 1; min-width: 0; }
+  header.top b { display: block; font-size: 1.02rem; }
+  header.top span { font-size: .8rem; opacity: .85; }
+  header.top a { color: #fff; font-size: .85rem; text-decoration: none; border: 1px solid #ffffff66; padding: 7px 12px; border-radius: 999px; }
+  main { max-width: 560px; margin: 0 auto; padding: 18px 16px 40px; }
+
+  .libro { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; }
+  .tapa {
+    flex: none; width: 92px; height: 128px; border-radius: 6px 12px 12px 6px;
+    background: linear-gradient(135deg, #4E7F3A, #2C4E1F);
+    box-shadow: 4px 6px 14px #2c4e1f44, inset 6px 0 0 #00000022;
+    color: #F6E7B8; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 8px; font-size: .78rem; font-style: italic; border: 1px solid #1f3a15;
+  }
+  .tapa .g { font-size: 1.9rem; margin-bottom: 4px; font-style: normal; }
+  .libro h1 { font-size: 1.45rem; margin: 0 0 4px; line-height: 1.15; }
+  .libro p { margin: 0; color: var(--suave); font-size: .95rem; }
+  .libro .prog { margin-top: 8px; font-family: system-ui, sans-serif; font-size: .82rem; color: var(--verde); font-weight: 600; }
+
+  .player {
+    background: var(--papel); border: 1px solid var(--linea); border-radius: 22px;
+    padding: 20px 18px 18px; box-shadow: 0 8px 22px #3f6b2e1a;
+  }
+  .ahora { text-align: center; margin-bottom: 14px; }
+  .ahora small { display: block; font-family: system-ui, sans-serif; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); }
+  .ahora h2 { margin: 2px 0 0; font-size: 1.5rem; }
+  .estado { min-height: 1.3em; text-align: center; font-family: system-ui, sans-serif; font-size: .85rem; color: var(--suave); margin: 0 0 6px; }
+  .estado.err { color: #A33A2A; }
+
+  .barra { display: flex; align-items: center; gap: 10px; font-family: system-ui, sans-serif; font-size: .82rem; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .barra span { width: 46px; }
+  .barra span:last-child { text-align: right; }
+  input[type=range] { flex: 1; height: 40px; background: transparent; -webkit-appearance: none; appearance: none; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 99px; background: linear-gradient(to right, var(--verde) var(--p, 0%), var(--verde-cl) var(--p, 0%)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -8px; border-radius: 50%; background: var(--verde); border: 3px solid #fff; box-shadow: 0 1px 5px #0004; }
+  input[type=range]::-moz-range-track { height: 8px; border-radius: 99px; background: var(--verde-cl); }
+  input[type=range]::-moz-range-progress { height: 8px; border-radius: 99px; background: var(--verde); }
+  input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--verde); border: 3px solid #fff; }
+  input[type=range]:disabled { opacity: .5; }
+
+  .ctrl { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0 14px; }
+  .ctrl button { border: none; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ctrl .salto { width: 66px; height: 66px; border-radius: 50%; background: var(--verde-cl); color: var(--verde-osc); font-family: system-ui, sans-serif; font-weight: 700; font-size: .95rem; }
+  .salto svg { width: 24px; height: 24px; }
+  .salto:active, .play:active { transform: scale(.95); }
+  .ctrl .play { width: 92px; height: 92px; border-radius: 50%; background: var(--verde); color: #fff; box-shadow: 0 6px 16px #3f6b2e55; }
+  .play svg { width: 42px; height: 42px; }
+  .ctrl button:disabled { opacity: .4; }
+  .ctrl button:focus-visible, .vel button:focus-visible, .cap:focus-visible { outline: 3px solid var(--miel); outline-offset: 2px; }
+
+  .vel { display: flex; justify-content: center; gap: 8px; font-family: system-ui, sans-serif; }
+  .vel button { min-width: 62px; min-height: 42px; border-radius: 999px; border: 2px solid var(--verde-cl); background: transparent; font-weight: 600; font-size: .9rem; color: var(--suave); }
+  .vel button[aria-pressed="true"] { background: var(--verde); border-color: var(--verde); color: #fff; }
+
+  h3.lista { margin: 26px 4px 8px; font-size: 1.1rem; }
+  ul.caps { list-style: none; margin: 0; padding: 0; background: var(--papel); border: 1px solid var(--linea); border-radius: 18px; overflow: hidden; }
+  ul.caps li + li { border-top: 1px solid var(--linea); }
+  .cap { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 14px; min-height: 60px; background: none; border: none; text-align: left; }
+  .cap .n { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--verde-cl); color: var(--verde-osc); display: flex; align-items: center; justify-content: center; font-family: system-ui, sans-serif; font-weight: 700; font-size: .85rem; }
+  .cap .tx { flex: 1; min-width: 0; }
+  .cap .tx b { display: block; font-weight: 600; font-size: 1.02rem; }
+  .cap .tx small { font-family: system-ui, sans-serif; font-size: .78rem; color: var(--suave); }
+  .cap .ic { flex: none; font-family: system-ui, sans-serif; font-size: .8rem; color: var(--verde); font-weight: 700; }
+  .cap.activo { background: var(--verde-cl); }
+  .cap.activo .n { background: var(--verde); color: #fff; }
+  .cap.pronto { cursor: default; }
+  .cap.pronto .n { background: #ECE7D6; color: #9b9a8a; }
+  .cap.pronto .tx b { color: #9b9a8a; font-weight: 500; }
+  .cap.pronto .ic { color: #9b9a8a; font-weight: 500; }
+  .cap .mini { display: block; height: 3px; border-radius: 9px; background: var(--linea); margin-top: 6px; overflow: hidden; }
+  .cap .mini i { display: block; height: 100%; background: var(--miel); }
+  .nota { text-align: center; color: var(--suave); font-size: .85rem; margin-top: 18px; font-style: italic; }
+</style>
+</head>
+<body>
+<header class="top">
+  <img src="/icon-192.png" alt="" width="36" height="36">
+  <div class="t"><b>La Ruta del Bienestar</b><span>Audiolibros</span></div>
+  <a href="/">Catálogo</a>
+</header>
+
+<main>
+  <section class="libro">
+    <div class="tapa" aria-hidden="true"><div class="g">🌍</div>La vuelta al mundo en 80 días</div>
+    <div>
+      <h1 id="titulo">La vuelta al mundo en 80 días</h1>
+      <p id="autor">Julio Verne</p>
+      <div class="prog" id="progreso">Buscando capítulos…</div>
+    </div>
+  </section>
+
+  <section class="player" aria-label="Reproductor">
+    <div class="ahora"><small>Escuchando</small><h2 id="capActual">—</h2></div>
+    <p class="estado" id="estado" role="status" aria-live="polite"></p>
+    <div class="barra">
+      <span id="tActual">0:00</span>
+      <input type="range" id="seek" min="0" max="1000" value="0" step="1" disabled aria-label="Posición del capítulo">
+      <span id="tTotal">0:00</span>
+    </div>
+    <div class="ctrl">
+      <button class="salto" id="atras" aria-label="Retroceder 15 segundos" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>15
+      </button>
+      <button class="play" id="play" aria-label="Reproducir" disabled>
+        <svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="icoPausa" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+      </button>
+      <button class="salto" id="adelante" aria-label="Adelantar 15 segundos" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>15
+      </button>
+    </div>
+    <div class="vel" id="vel" role="group" aria-label="Velocidad"></div>
+  </section>
+
+  <h3 class="lista">Capítulos</h3>
+  <ul class="caps" id="caps"></ul>
+  <p class="nota">Sale un capítulo nuevo por día. 🌿</p>
+</main>
+
+<audio id="audio" preload="metadata"></audio>
+
+<script>
+(function () {
+  'use strict';
+  var LIBRO = {
+    id: 'vuelta80',
+    titulo: 'La vuelta al mundo en 80 días',
+    autor: 'Julio Verne',
+    total: 37,
+    base: '/audiolibros/vuelta80/'
+  };
+  var VELOCIDADES = [0.75, 1, 1.25, 1.5];
+  var K = 'audiolibros:' + LIBRO.id + ':';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var audio = $('audio'), seek = $('seek'), btnPlay = $('play');
+  var disponibles = {};   // n -> true
+  var actual = null;      // capítulo cargado
+  var arrastrando = false;
+  var ultimoGuardado = 0;
+
+  function ls(get, k, v) {
+    try { return get ? localStorage.getItem(K + k) : localStorage.setItem(K + k, v); } catch (e) { return null; }
+  }
+  function lsDel(k) { try { localStorage.removeItem(K + k); } catch (e) {} }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function url(n) { return LIBRO.base + 'capitulo-' + pad(n) + '.mp3'; }
+  function fmt(s) {
+    if (!isFinite(s) || s < 0) s = 0;
+    s = Math.floor(s);
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+    return h ? h + ':' + pad(m) + ':' + pad(x) : m + ':' + pad(x);
+  }
+  function posGuardada(n) { var v = parseFloat(ls(true, 'pos:' + n)); return isFinite(v) ? v : 0; }
+  function durGuardada(n) { var v = parseFloat(ls(true, 'dur:' + n)); return isFinite(v) ? v : 0; }
+  function terminado(n) { return ls(true, 'fin:' + n) === '1'; }
+  function mensaje(t, err) { var e = $('estado'); e.textContent = t || ''; e.className = 'estado' + (err ? ' err' : ''); }
+
+  /* ---------- velocidad ---------- */
+  var vel = parseFloat(ls(true, 'vel')) || 1;
+  if (VELOCIDADES.indexOf(vel) < 0) vel = 1;
+  VELOCIDADES.forEach(function (v) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = v + '×'; b.dataset.v = v;
+    b.addEventListener('click', function () { vel = v; ls(false, 'vel', v); aplicarVel(); });
+    $('vel').appendChild(b);
+  });
+  function aplicarVel() {
+    audio.defaultPlaybackRate = vel; audio.playbackRate = vel;
+    Array.prototype.forEach.call($('vel').children, function (b) {
+      b.setAttribute('aria-pressed', parseFloat(b.dataset.v) === vel ? 'true' : 'false');
+    });
+  }
+  aplicarVel();
+
+  /* ---------- lista de capítulos ---------- */
+  function dibujarLista() {
+    var ul = $('caps'); ul.innerHTML = '';
+    var cuantos = 0;
+    for (var n = 1; n <= LIBRO.total; n++) {
+      var ok = !!disponibles[n]; if (ok) cuantos++;
+      var li = document.createElement('li');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cap' + (ok ? '' : ' pronto') + (n === actual ? ' activo' : '');
+      b.dataset.n = n;
+      var sub = '', ic = '', mini = '';
+      if (!ok) { sub = ''; ic = 'Próximamente'; b.disabled = true; }
+      else if (terminado(n)) { sub = 'Escuchado'; ic = '✓'; }
+      else {
+        var p = posGuardada(n), d = durGuardada(n);
+        if (p > 5) {
+          sub = 'Seguís en ' + fmt(p);
+          if (d > 0) mini = '<span class="mini"><i style="width:' + Math.min(100, p / d * 100) + '%"></i></span>';
+        } else sub = d ? fmt(d) : 'Listo para escuchar';
+        ic = n === actual ? '♪' : '▶';
+      }
+      b.innerHTML = '<span class="n">' + n + '</span><span class="tx"><b>Capítulo ' + n + '</b>' +
+        (sub ? '<small>' + sub + '</small>' : '') + mini + '</span><span class="ic">' + ic + '</span>';
+      if (ok) b.addEventListener('click', (function (nn) { return function () { cargar(nn, true); }; })(n));
+      li.appendChild(b); ul.appendChild(li);
+    }
+    $('progreso').textContent = cuantos === 0 ? 'Todavía no hay capítulos'
+      : cuantos + ' de ' + LIBRO.total + ' capítulos disponibles';
+  }
+
+  /* ---------- detectar capítulos (HEAD) ---------- */
+  function existe(n) {
+    return fetch(url(n), { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+      var tipo = (r.headers.get('content-type') || '').toLowerCase();
+      return r.ok && tipo.indexOf('text/html') < 0 && tipo.indexOf('text/plain') < 0;
+    });
+  }
+  function detectar() {
+    var pendientes = [];
+    for (var n = 1; n <= LIBRO.total; n++) pendientes.push(n);
+    var huboRed = false;
+    return Promise.all(pendientes.map(function (n) {
+      return existe(n).then(function (ok) { huboRed = true; return [n, ok]; }, function () { return [n, null]; });
+    })).then(function (res) {
+      var cache = {};
+      try { cache = JSON.parse(ls(true, 'disp') || '{}'); } catch (e) {}
+      var nuevo = {};
+      res.forEach(function (r) {
+        if (r[1] === true) nuevo[r[0]] = true;
+        else if (r[1] === null && cache[r[0]]) nuevo[r[0]] = true; // sin conexión: usar lo último conocido
+      });
+      if (huboRed) ls(false, 'disp', JSON.stringify(nuevo));
+      disponibles = nuevo;
+    });
+  }
+
+  /* ---------- reproductor ---------- */
+  function siguienteDisponible(n) {
+    for (var i = n + 1; i <= LIBRO.total; i++) if (disponibles[i]) return i;
+    return null;
+  }
+  function habilitar(si) {
+    seek.disabled = !si; btnPlay.disabled = !si;
+    $('atras').disabled = !si; $('adelante').disabled = !si;
+  }
+  function cargar(n, reproducir) {
+    if (!disponibles[n]) return;
+    guardarPos(true);
+    actual = n;
+    ls(false, 'ultimo', n);
+    lsDel('fin:' + n);
+    $('capActual').textContent = 'Capítulo ' + n;
+    mensaje('Cargando…');
+    habilitar(true);
+    seek.value = 0; pintarSeek();
+    $('tActual').textContent = fmt(posGuardada(n));
+    $('tTotal').textContent = durGuardada(n) ? fmt(durGuardada(n)) : '0:00';
+    audio.src = url(n);
+    aplicarVel();
+    audio.load();
+    if (reproducir) audio.play().catch(function () {});
+    metadatos();
+    dibujarLista();
+  }
+  audio.addEventListener('loadedmetadata', function () {
+    var d = audio.duration;
+    if (isFinite(d)) { ls(false, 'dur:' + actual, d); $('tTotal').textContent = fmt(d); }
+    var p = posGuardada(actual);
+    if (p > 2 && isFinite(d) && p < d - 5) { try { audio.currentTime = p; } catch (e) {} }
+    mensaje('');
+    dibujarLista();
+  });
+  audio.addEventListener('canplay', function () { if (estadoEs('Cargando…')) mensaje(''); });
+  audio.addEventListener('waiting', function () { mensaje('Cargando…'); });
+  audio.addEventListener('playing', function () { mensaje(''); });
+  function estadoEs(t) { return $('estado').textContent === t; }
+
+  audio.addEventListener('play', pintarBoton);
+  audio.addEventListener('pause', function () { pintarBoton(); guardarPos(true); });
+  function pintarBoton() {
+    var suena = !audio.paused;
+    $('icoPlay').style.display = suena ? 'none' : '';
+    $('icoPausa').style.display = suena ? '' : 'none';
+    btnPlay.setAttribute('aria-label', suena ? 'Pausar' : 'Reproducir');
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = suena ? 'playing' : 'paused';
+  }
+  function pintarSeek() {
+    seek.style.setProperty('--p', (seek.value / 10) + '%');
+  }
+  audio.addEventListener('timeupdate', function () {
+    if (!arrastrando && isFinite(audio.duration) && audio.duration > 0) {
+      seek.value = Math.round(audio.currentTime / audio.duration * 1000);
+      pintarSeek();
+      $('tActual').textContent = fmt(audio.currentTime);
+    }
+    var ahora = Date.now();
+    if (ahora - ultimoGuardado > 2000) guardarPos(false);
+  });
+  function guardarPos(forzar) {
+    if (actual == null || !audio.src || !isFinite(audio.duration) || audio.duration <= 0) return;
+    if (audio.ended) return;
+    ultimoGuardado = Date.now();
+    ls(false, 'pos:' + actual, audio.currentTime);
+  }
+  window.addEventListener('pagehide', function () { guardarPos(true); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) guardarPos(true); });
+
+  seek.addEventListener('input', function () {
+    arrastrando = true; pintarSeek();
+    if (isFinite(audio.duration)) $('tActual').textContent = fmt(seek.value / 1000 * audio.duration);
+  });
+  seek.addEventListener('change', function () {
+    if (isFinite(audio.duration)) audio.currentTime = seek.value / 1000 * audio.duration;
+    arrastrando = false; guardarPos(true);
+  });
+
+  btnPlay.addEventListener('click', function () {
+    if (audio.paused) audio.play().catch(function () { mensaje('No se pudo reproducir. Probá de nuevo.', true); });
+    else audio.pause();
+  });
+  function saltar(s) {
+    if (!isFinite(audio.duration)) return;
+    audio.currentTime = Math.max(0, Math.min(audio.duration - 0.5, audio.currentTime + s));
+    guardarPos(true);
+  }
+  $('atras').addEventListener('click', function () { saltar(-15); });
+  $('adelante').addEventListener('click', function () { saltar(15); });
+
+  audio.addEventListener('ended', function () {
+    ls(false, 'fin:' + actual, '1'); lsDel('pos:' + actual);
+    var sig = siguienteDisponible(actual);
+    var termino = actual;
+    if (sig) { cargar(sig, true); }
+    else {
+      pintarBoton();
+      mensaje(termino >= LIBRO.total ? '¡Terminaste el libro! 🎉' : 'Terminaste lo disponible. Mañana hay capítulo nuevo.');
+      dibujarLista();
+    }
+  });
+  audio.addEventListener('error', function () {
+    if (!audio.src) return;
+    mensaje('No se pudo cargar este capítulo. Revisá tu conexión.', true);
+  });
+
+  /* ---------- pantalla de bloqueo ---------- */
+  function metadatos() {
+    if (!('mediaSession' in navigator) || actual == null) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Capítulo ' + actual, artist: LIBRO.autor, album: LIBRO.titulo,
+        artwork: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }]
+      });
+      navigator.mediaSession.setActionHandler('play', function () { audio.play(); });
+      navigator.mediaSession.setActionHandler('pause', function () { audio.pause(); });
+      navigator.mediaSession.setActionHandler('seekbackward', function () { saltar(-15); });
+      navigator.mediaSession.setActionHandler('seekforward', function () { saltar(15); });
+      navigator.mediaSession.setActionHandler('nexttrack', function () { var s = siguienteDisponible(actual); if (s) cargar(s, true); });
+    } catch (e) {}
+  }
+
+  /* ---------- arranque ---------- */
+  dibujarLista();
+  detectar().then(function () {
+    var ult = parseInt(ls(true, 'ultimo'), 10);
+    var inicio = null;
+    if (ult && disponibles[ult]) inicio = ult;
+    else for (var n = 1; n <= LIBRO.total; n++) if (disponibles[n]) { inicio = n; break; }
+    if (inicio) {
+      // si el último ya estaba terminado y hay uno nuevo, ofrecer el siguiente
+      if (terminado(inicio) && siguienteDisponible(inicio)) inicio = siguienteDisponible(inicio);
+      cargar(inicio, false);
+    } else {
+      dibujarLista();
+      mensaje('Todavía no hay capítulos. Volvé pronto.');
+    }
+  }).catch(function () { mensaje('No se pudo buscar los capítulos.', true); });
+})();
+</script>
+</body>
+</html>
