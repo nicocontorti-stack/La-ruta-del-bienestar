@@ -15,7 +15,8 @@ const TIPOS = {
   '.txt': 'text/plain; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml'
+  '.svg': 'image/svg+xml',
+  '.mp3': 'audio/mpeg'
 };
 
 // Conservamos sólo una respuesta comprobada y durante pocos minutos. Nunca usamos
@@ -105,6 +106,36 @@ http.createServer((req, res) => {
     archivo = path.join(__dirname, 'index.html');
   }
 
+  // Audio: se sirve en pedazos (Range) para que el celular pueda adelantar,
+  // retroceder y retomar donde quedó sin bajar todo el archivo.
+  if (path.extname(archivo) === '.mp3') {
+    fs.stat(archivo, (err, st) => {
+      if (err || !st.isFile()) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        return res.end('No encontrado');
+      }
+      const base = { 'Content-Type': 'audio/mpeg', 'Accept-Ranges': 'bytes' };
+      const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+      if (m && (m[1] !== '' || m[2] !== '')) {
+        let ini = m[1] === '' ? st.size - parseInt(m[2], 10) : parseInt(m[1], 10);
+        let fin = m[1] === '' || m[2] === '' ? st.size - 1 : parseInt(m[2], 10);
+        if (ini < 0) ini = 0;
+        if (fin >= st.size) fin = st.size - 1;
+        if (ini > fin || ini >= st.size) {
+          res.writeHead(416, { ...base, 'Content-Range': 'bytes */' + st.size });
+          return res.end();
+        }
+        res.writeHead(206, { ...base, 'Content-Range': 'bytes ' + ini + '-' + fin + '/' + st.size, 'Content-Length': fin - ini + 1 });
+        if (req.method === 'HEAD') return res.end();
+        return fs.createReadStream(archivo, { start: ini, end: fin }).pipe(res);
+      }
+      res.writeHead(200, { ...base, 'Content-Length': st.size });
+      if (req.method === 'HEAD') return res.end();
+      fs.createReadStream(archivo).pipe(res);
+    });
+    return;
+  }
+
   fs.readFile(archivo, (err, data) => {
     if (err) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -115,5 +146,6 @@ http.createServer((req, res) => {
     res.end(data);
   });
 }).listen(PORT, () => console.log('La ruta del bienestar en puerto ' + PORT));
+
 
 
