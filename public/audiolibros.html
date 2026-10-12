@@ -111,6 +111,11 @@
   .cap.pronto .ic { color: #9b9a8a; font-weight: 500; }
   .cap .mini { display: block; height: 3px; border-radius: 9px; background: var(--linea); margin-top: 6px; overflow: hidden; }
   .cap .mini i { display: block; height: 100%; background: var(--miel); }
+  .caps li { list-style: none; }
+  .acc { display: flex; gap: 6px; padding: 0 12px 12px 60px; flex-wrap: wrap; }
+  .acc a, .acc button { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: .8rem; font-weight: 600; color: var(--verde-osc); background: var(--papel); border: 1px solid var(--linea); border-radius: 999px; padding: 8px 10px; min-height: 36px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+  .acc .off.on { background: var(--verde); color: #fff; border-color: var(--verde); }
+  .acc .off:disabled { opacity: .6; }
   .nota { text-align: center; color: var(--suave); font-size: .85rem; margin-top: 18px; font-style: italic; }
 </style>
 </head>
@@ -240,10 +245,82 @@
       b.innerHTML = '<span class="n">' + n + '</span><span class="tx"><b>Capítulo ' + n + '</b>' +
         (sub ? '<small>' + sub + '</small>' : '') + mini + '</span><span class="ic">' + ic + '</span>';
       if (ok) b.addEventListener('click', (function (nn) { return function () { cargar(nn, true); }; })(n));
-      li.appendChild(b); ul.appendChild(li);
+      li.appendChild(b);
+      if (ok) li.appendChild(acciones(n));
+      ul.appendChild(li);
     }
     $('progreso').textContent = cuantos === 0 ? 'Todavía no hay capítulos'
       : cuantos + ' de ' + LIBRO.total + ' capítulos disponibles';
+  }
+
+  /* ---------- descargar, offline y compartir ---------- */
+  var offline = {};     // n -> true (guardado en el celular para escuchar sin internet)
+  var guardando = {};   // n -> true mientras se baja
+  var CACHE = 'audiolibros-' + LIBRO.id;
+  var hayCache = 'caches' in window;
+  var blobUrl = null;
+  function acciones(n) {
+    var d = document.createElement('div'); d.className = 'acc';
+    var a = document.createElement('a');
+    a.href = url(n); a.setAttribute('download', LIBRO.id + '-capitulo-' + pad(n) + '.mp3');
+    a.textContent = '⬇ Descargar';
+    a.setAttribute('aria-label', 'Descargar capítulo ' + n);
+    d.appendChild(a);
+    if (hayCache) {
+      var o = document.createElement('button'); o.type = 'button';
+      o.className = 'off' + (offline[n] ? ' on' : '');
+      o.disabled = !!guardando[n];
+      o.textContent = guardando[n] ? 'Guardando…' : offline[n] ? '✓ Offline' : '📥 Offline';
+      o.setAttribute('aria-label', offline[n] ? 'Borrar capítulo ' + n + ' guardado' : 'Guardar capítulo ' + n + ' para escuchar sin internet');
+      o.addEventListener('click', function () { alternarOffline(n); });
+      d.appendChild(o);
+    }
+    var c = document.createElement('button'); c.type = 'button';
+    c.textContent = '↗ Compartir';
+    c.setAttribute('aria-label', 'Compartir capítulo ' + n);
+    c.addEventListener('click', function () { compartir(n); });
+    d.appendChild(c);
+    return d;
+  }
+  function alternarOffline(n) {
+    if (guardando[n]) return;
+    if (offline[n]) {
+      caches.open(CACHE).then(function (c) { return c.delete(url(n)); }).then(function () {
+        delete offline[n]; dibujarLista();
+        mensaje('Capítulo ' + n + ' borrado del celular.');
+      }).catch(function () {});
+      return;
+    }
+    guardando[n] = true; dibujarLista();
+    mensaje('Guardando capítulo ' + n + '… puede tardar un poco.');
+    fetch(url(n)).then(function (r) {
+      if (!r.ok) throw new Error('http');
+      return caches.open(CACHE).then(function (c) { return c.put(url(n), r); });
+    }).then(function () {
+      delete guardando[n]; offline[n] = true; dibujarLista();
+      mensaje('Listo: el capítulo ' + n + ' ya se escucha sin internet.');
+    }).catch(function () {
+      delete guardando[n]; dibujarLista();
+      mensaje('No se pudo guardar el capítulo ' + n + '. Revisá tu conexión.', true);
+    });
+  }
+  function cargarOffline() {
+    if (!hayCache) return Promise.resolve();
+    return caches.open(CACHE).then(function (c) { return c.keys(); }).then(function (ks) {
+      ks.forEach(function (r) {
+        var m = /capitulo-(\d+)\.mp3$/.exec(r.url);
+        if (m) offline[parseInt(m[1], 10)] = true;
+      });
+    }).catch(function () {});
+  }
+  function compartir(n) {
+    var link = location.origin + location.pathname + '?cap=' + n;
+    var texto = 'Escuchá "' + LIBRO.titulo + '" (capítulo ' + n + ') en La Ruta del Bienestar:';
+    if (navigator.share) {
+      navigator.share({ title: LIBRO.titulo, text: texto, url: link }).catch(function () {});
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(texto + ' ' + link), '_blank', 'noopener');
+    }
   }
 
   /* ---------- detectar capítulos (HEAD) ---------- */
@@ -265,7 +342,7 @@
       var nuevo = {};
       res.forEach(function (r) {
         if (r[1] === true) nuevo[r[0]] = true;
-        else if (r[1] === null && cache[r[0]]) nuevo[r[0]] = true; // sin conexión: usar lo último conocido
+        else if (r[1] === null && (cache[r[0]] || offline[r[0]])) nuevo[r[0]] = true; // sin conexión: usar lo último conocido
       });
       if (huboRed) ls(false, 'disp', JSON.stringify(nuevo));
       disponibles = nuevo;
@@ -293,7 +370,16 @@
     seek.value = 0; pintarSeek();
     $('tActual').textContent = fmt(posGuardada(n));
     $('tTotal').textContent = durGuardada(n) ? fmt(durGuardada(n)) : '0:00';
+    if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (e) {} blobUrl = null; }
     audio.src = url(n);
+    if (offline[n] && hayCache && !navigator.onLine) {
+      caches.open(CACHE).then(function (c) { return c.match(url(n)); }).then(function (r) { return r ? r.blob() : null; }).then(function (b) {
+        if (b && actual === n) {
+          blobUrl = URL.createObjectURL(b); audio.src = blobUrl; audio.load();
+          if (reproducir) audio.play().catch(function () {});
+        }
+      }).catch(function () {});
+    }
     aplicarVel();
     audio.load();
     if (reproducir) audio.play().catch(function () {});
@@ -397,15 +483,17 @@
   }
 
   /* ---------- arranque ---------- */
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {});
   dibujarLista();
-  detectar().then(function () {
-    var ult = parseInt(ls(true, 'ultimo'), 10);
+  cargarOffline().then(detectar).then(function () {
+    var pedido = parseInt((/[?&]cap=(\d+)/.exec(location.search) || [])[1], 10);
+    var ult = pedido && disponibles[pedido] ? pedido : parseInt(ls(true, 'ultimo'), 10);
     var inicio = null;
     if (ult && disponibles[ult]) inicio = ult;
     else for (var n = 1; n <= LIBRO.total; n++) if (disponibles[n]) { inicio = n; break; }
     if (inicio) {
       // si el último ya estaba terminado y hay uno nuevo, ofrecer el siguiente
-      if (terminado(inicio) && siguienteDisponible(inicio)) inicio = siguienteDisponible(inicio);
+      if (!(pedido && inicio === pedido) && terminado(inicio) && siguienteDisponible(inicio)) inicio = siguienteDisponible(inicio);
       cargar(inicio, false);
     } else {
       dibujarLista();
