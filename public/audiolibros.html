@@ -216,6 +216,13 @@
       total: 2, base: '/audiolibros/lenguaje-corporal/',
       unidad: 'Parte', unidades: 'partes', archivo: 'parte-',
       nota: 'Resumen en audio: lo práctico primero. 🌿'
+    },
+    {
+      id: 'ganar-amigos', categoria: 'autoayuda', icono: 'C',
+      titulo: 'Cómo ganar amigos e influir sobre las personas', autor: 'Dale Carnegie',
+      total: 1, base: '/audiolibros/ganar-amigos/',
+      unidad: 'Audio', unidades: 'audios', archivo: 'audio-', completo: true,
+      nota: 'Audio completo · 1 h 13 min · podés cambiar la velocidad al escuchar. 🌿'
     }
   ];
   function buscarLibro(id) { for (var i = 0; i < LIBROS.length; i++) if (LIBROS[i].id === id) return LIBROS[i]; return null; }
@@ -242,6 +249,7 @@
   function lsDel(k) { try { localStorage.removeItem(K + k); } catch (e) {} }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function url(n) { return LIBRO.base + LIBRO.archivo + pad(n) + '.mp3'; }
+  function etiqueta(n) { return LIBRO.completo ? 'Audio completo' : U + ' ' + n; }
   function fmt(s) {
     if (!isFinite(s) || s < 0) s = 0;
     s = Math.floor(s);
@@ -284,7 +292,7 @@
         var a = document.createElement('a'); a.className = 'card'; a.id = 'card-' + l.id;
         a.href = '/audiolibros.html?libro=' + l.id;
         var ult = parseInt(localStorage.getItem('audiolibros:' + l.id + ':ultimo'), 10);
-        var sub = ult ? 'Seguís en ' + l.unidad.toLowerCase() + ' ' + ult : 'Buscando ' + l.unidades + '…';
+        var sub = l.completo ? 'Buscando el audio…' : (ult ? 'Seguís en ' + l.unidad.toLowerCase() + ' ' + ult : 'Buscando ' + l.unidades + '…');
         a.innerHTML = '<div class="tapa" aria-hidden="true"><div class="g">' + l.icono + '</div></div>' +
           '<div class="tx"><b></b><span></span><small data-estado></small></div><span class="ic" aria-hidden="true">›</span>';
         a.querySelector('b').textContent = l.titulo;
@@ -294,7 +302,11 @@
         conteo(l).then(function (c) {
           var t = a.querySelector('small');
           var base = c === 0 ? 'Todavía no hay ' + l.unidades : c + ' de ' + l.total + ' ' + l.unidades + ' disponibles';
-          t.textContent = ult ? base + ' · seguís en ' + l.unidad.toLowerCase() + ' ' + ult : base;
+          if (l.completo) {
+            var pos = parseFloat(localStorage.getItem('audiolibros:' + l.id + ':pos:1')) || 0;
+            var fin = localStorage.getItem('audiolibros:' + l.id + ':fin:1') === '1';
+            t.textContent = c ? 'Audio completo · 1 h 13 min' + (fin ? ' · escuchado' : pos > 5 ? ' · seguís en ' + fmt(pos) : '') : 'Audio todavía no disponible';
+          } else t.textContent = ult ? base + ' · seguís en ' + l.unidad.toLowerCase() + ' ' + ult : base;
         });
       });
     });
@@ -344,14 +356,14 @@
         } else sub = d ? fmt(d) : 'Listo para escuchar';
         ic = n === actual ? '♪' : '▶';
       }
-      b.innerHTML = '<span class="n">' + n + '</span><span class="tx"><b>' + U + ' ' + n + '</b>' +
+      b.innerHTML = '<span class="n">' + n + '</span><span class="tx"><b>' + etiqueta(n) + '</b>' +
         (sub ? '<small>' + sub + '</small>' : '') + mini + '</span><span class="ic">' + ic + '</span>';
       if (ok) b.addEventListener('click', (function (nn) { return function () { cargar(nn, true); }; })(n));
       li.appendChild(b);
       if (ok) li.appendChild(acciones(n));
       ul.appendChild(li);
     }
-    $('progreso').textContent = cuantos === 0 ? 'Todavía no hay ' + LIBRO.unidades
+    $('progreso').textContent = LIBRO.completo ? (cuantos ? 'Audio completo disponible' : 'Audio todavía no disponible') : cuantos === 0 ? 'Todavía no hay ' + LIBRO.unidades
       : cuantos + ' de ' + LIBRO.total + ' ' + LIBRO.unidades + ' disponibles';
   }
 
@@ -466,7 +478,7 @@
     actual = n;
     ls(false, 'ultimo', n);
     lsDel('fin:' + n);
-    $('capActual').textContent = U + ' ' + n;
+    $('capActual').textContent = etiqueta(n);
     mensaje('Cargando…');
     habilitar(true);
     seek.value = 0; pintarSeek();
@@ -573,7 +585,7 @@
     if (!('mediaSession' in navigator) || actual == null) return;
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: U + ' ' + actual, artist: LIBRO.autor, album: LIBRO.titulo,
+        title: etiqueta(actual), artist: LIBRO.autor, album: LIBRO.titulo,
         artwork: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }]
       });
       navigator.mediaSession.setActionHandler('play', function () { audio.play(); });
@@ -590,7 +602,7 @@
   $('autor').textContent = LIBRO.autor;
   $('tapaIcono').textContent = LIBRO.icono;
   $('tapaTitulo').textContent = LIBRO.titulo;
-  $('tituloLista').textContent = LIBRO.unidad === 'Parte' ? 'Partes' : 'Capítulos';
+  $('tituloLista').textContent = LIBRO.completo ? 'Audio' : LIBRO.unidad === 'Parte' ? 'Partes' : 'Capítulos';
   $('notaLibro').textContent = LIBRO.nota;
 
   /* ---------- arranque ---------- */
