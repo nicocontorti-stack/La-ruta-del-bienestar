@@ -220,9 +220,9 @@
     {
       id: 'ganar-amigos', categoria: 'autoayuda', icono: 'C',
       titulo: 'Cómo ganar amigos e influir sobre las personas', autor: 'Dale Carnegie',
-      total: 1, base: '/audiolibros/ganar-amigos/',
-      unidad: 'Audio', unidades: 'audios', archivo: 'audio-', completo: true,
-      nota: 'Audio completo · 1 h 13 min · podés cambiar la velocidad al escuchar. 🌿'
+      total: 2, base: '/audiolibros/ganar-amigos/', archivos: ['/audiolibros/ganar-amigos/audio-01.mp3', '/audiolibros/como-ganar-amigos-1-2/capitulo-02.mp3'],
+      unidad: 'Capítulo', unidades: 'capítulos', archivo: 'audio-',
+      nota: 'Capítulo 1 (1 h 13 min) y capítulo 2 · podés cambiar la velocidad al escuchar. 🌿'
     }
   ];
   function buscarLibro(id) { for (var i = 0; i < LIBROS.length; i++) if (LIBROS[i].id === id) return LIBROS[i]; return null; }
@@ -248,7 +248,7 @@
   }
   function lsDel(k) { try { localStorage.removeItem(K + k); } catch (e) {} }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
-  function url(n) { return LIBRO.base + LIBRO.archivo + pad(n) + '.mp3'; }
+  function url(n) { return (LIBRO.archivos && LIBRO.archivos[n - 1]) || (LIBRO.base + LIBRO.archivo + pad(n) + '.mp3'); }
   function etiqueta(n) { return LIBRO.completo ? 'Audio completo' : U + ' ' + n; }
   function fmt(s) {
     if (!isFinite(s) || s < 0) s = 0;
@@ -423,7 +423,8 @@
     return caches.open(CACHE).then(function (c) { return c.keys(); }).then(function (ks) {
       ks.forEach(function (r) {
         var m = new RegExp(LIBRO.archivo + '(\\d+)\\.mp3$').exec(r.url);
-        if (m) offline[parseInt(m[1], 10)] = true;
+        if (LIBRO.archivos) { for (var q = 1; q <= LIBRO.archivos.length; q++) if (r.url.indexOf(LIBRO.archivos[q - 1]) !== -1) offline[q] = true; }
+        else if (m) offline[parseInt(m[1], 10)] = true;
       });
     }).catch(function () {});
   }
