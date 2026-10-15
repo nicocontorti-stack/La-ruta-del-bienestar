@@ -4,21 +4,6 @@
     {
       "id": "vuelta80",
       "total": 6
-    },
-    {
-      "id": "prueba-tecnica-temporal",
-      "categoria": "novela",
-      "icono": "🎧",
-      "titulo": "Prueba técnica temporal",
-      "autor": "",
-      "total": 1,
-      "base": "/audiolibros/prueba-tecnica-temporal/",
-      "unidad": "Audio",
-      "unidades": "audios",
-      "archivo": "audio-",
-      "nota": "Audio completo. 🌿",
-      "completo": true,
-      "duracion": ""
     }
   ]
 }
