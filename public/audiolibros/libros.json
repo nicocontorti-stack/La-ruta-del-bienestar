@@ -4,19 +4,6 @@
     {
       "id": "vuelta80",
       "total": 6
-    },
-    {
-      "id": "como-ganar-amigos-1-2",
-      "categoria": "autoayuda",
-      "icono": "🎧",
-      "titulo": "Como ganar amigos 1.2",
-      "autor": "Dale Carnegie",
-      "total": 2,
-      "base": "/audiolibros/como-ganar-amigos-1-2/",
-      "unidad": "Capítulo",
-      "unidades": "capítulos",
-      "archivo": "capitulo-",
-      "nota": "Se suman capítulos de a poco. 🌿"
     }
   ]
 }
