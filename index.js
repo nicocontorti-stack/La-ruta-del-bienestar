@@ -3,6 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
+
+// Subida de audiolibros desde el celu. Si algo falla al cargarlo, el sitio sigue andando igual.
+let audioApi = null;
+try { audioApi = require('./audiolibros-api.js'); } catch (e) { console.error('audiolibros-api no se pudo cargar:', e); }
 const PUBLIC = path.join(__dirname, 'public');
 const CATALOGO_API = 'https://script.google.com/macros/s/AKfycbzV_CxuKYu5uEjWOswbSZZLatlc8i5TvjT-Ldt_Ihre0RS-18eZy4AaOKvFmpfY-ikp/exec?accion=catalogo';
 
@@ -60,12 +64,18 @@ function responderCatalogo(res, contenido, anterior) {
   res.end(contenido);
 }
 
-http.createServer((req, res) => {
-  const ruta = decodeURIComponent(req.url.split('?')[0]);
+http.createServer(async (req, res) => {
+  let ruta;
+  try { ruta = decodeURIComponent(req.url.split('?')[0]); } catch (e) { res.writeHead(400); return res.end(); }
 
   if (ruta === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     return res.end('OK');
+  }
+
+  if (audioApi) {
+    try { if (await audioApi.manejar(req, res, ruta)) return; }
+    catch (e) { console.error('audioApi:', e); if (!res.headersSent) { res.writeHead(500); } return res.end(); }
   }
 
   // Fuente persistente: hoja Catálogo. La primera carga espera al script;

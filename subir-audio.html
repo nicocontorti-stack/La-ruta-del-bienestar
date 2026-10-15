@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>Subir audiolibro · La Ruta del Bienestar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>
+  :root { --fondo:#F6F1E4; --papel:#FFFDF7; --tinta:#26301F; --suave:#6B7260; --linea:#E0D9C3; --verde:#3F6B2E; --verde-osc:#2C4E1F; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fondo); color:var(--tinta); font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.4; }
+  header { background:var(--verde); color:#fff; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; }
+  header a { color:#fff; font-size:.85rem; text-decoration:none; border:1px solid #ffffff66; padding:7px 12px; border-radius:999px; }
+  main { max-width:520px; margin:0 auto; padding:18px 16px 60px; }
+  h1 { font-size:1.3rem; margin:6px 0 4px; }
+  p.s { color:var(--suave); font-size:.9rem; margin:0 0 14px; }
+  .caja { background:var(--papel); border:1px solid var(--linea); border-radius:16px; padding:16px; margin-bottom:14px; }
+  label { display:block; font-weight:600; font-size:.88rem; margin:12px 0 4px; }
+  input, select { width:100%; font:inherit; font-size:1rem; padding:12px; border:1px solid var(--linea); border-radius:10px; background:#fff; color:var(--tinta); }
+  button { width:100%; font:inherit; font-weight:700; font-size:1.05rem; padding:14px; margin-top:16px; border:0; border-radius:12px; background:var(--verde); color:#fff; }
+  button:disabled { opacity:.5; }
+  .oculto { display:none; }
+  .msg { padding:12px; border-radius:10px; margin-top:12px; font-size:.95rem; }
+  .err { background:#fde8e6; color:#8a1c12; } .ok { background:#e3ebd6; color:var(--verde-osc); } .info { background:#fff3d6; color:#6a4a00; }
+  .barra { height:12px; background:var(--linea); border-radius:99px; overflow:hidden; margin-top:12px; }
+  .barra i { display:block; height:100%; width:0; background:var(--verde); transition:width .3s; }
+  small { color:var(--suave); }
+  a.link { color:var(--verde-osc); font-weight:700; }
+</style>
+</head>
+<body>
+<header><b>Subir audiolibro</b><a href="/audiolibros.html">Biblioteca</a></header>
+<main>
+  <section id="login" class="caja">
+    <h1>Entrar</h1>
+    <p class="s">Poné el mismo PIN que usás en el panel de administración.</p>
+    <label for="pin">PIN</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="current-password">
+    <button id="entrar">Entrar</button>
+    <div id="loginMsg"></div>
+  </section>
+
+  <section id="form" class="oculto">
+    <div id="aviso"></div>
+    <div class="caja">
+      <h1>Nuevo audio</h1>
+      <p class="s">Solo archivos MP3, hasta <span id="maxmb">95</span> MB.</p>
+
+      <label for="cat">Categoría</label>
+      <select id="cat"></select>
+      <div id="catNuevaBox" class="oculto"><label for="catNueva">Nombre de la categoría nueva</label><input id="catNueva" maxlength="30"></div>
+
+      <label for="libro">Libro</label>
+      <select id="libro"></select>
+
+      <div id="nuevoBox" class="oculto">
+        <label for="titulo">Título</label><input id="titulo" maxlength="80">
+        <label for="autor">Autor (opcional)</label><input id="autor" maxlength="60">
+        <label for="tipo">¿Cómo es?</label>
+        <select id="tipo"><option value="completo">Un solo audio completo</option><option value="capitulos">Por capítulos (se van sumando)</option></select>
+      </div>
+
+      <div id="numBox" class="oculto">
+        <label for="numero">Número de capítulo <small>(vacío = el que sigue)</small></label>
+        <input id="numero" type="number" inputmode="numeric" min="1" max="999">
+      </div>
+
+      <label for="archivo">Archivo MP3</label>
+      <input id="archivo" type="file" accept=".mp3,audio/mpeg">
+      <button id="subir">Subir</button>
+      <div class="barra oculto" id="barra"><i id="barraI"></i></div>
+      <div id="estado"></div>
+    </div>
+    <p class="s">Al terminar, el audio ya se puede escuchar en la biblioteca. En unos minutos el sitio se actualiza solo y queda guardado para siempre. Si subís varios, mejor de a uno por vez.</p>
+  </section>
+</main>
+<script>
+(function () {
+  var $ = function (i) { return document.getElementById(i); };
+  var token = sessionStorage.getItem('subirToken') || '';
+  var E = null;
+  function msg(el, cls, txt) { $(el).innerHTML = ''; if (!txt) return; var d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = txt; $(el).appendChild(d); return d; }
+  async function api(ruta, op) {
+    op = op || {}; op.headers = Object.assign({ 'X-Token': token }, op.headers || {});
+    var r = await fetch(ruta, op); var j = {}; try { j = await r.json(); } catch (e) {}
+    if (r.status === 401 && token && ruta !== '/api/audio/login') { token = ''; sessionStorage.removeItem('subirToken'); mostrarLogin(); throw new Error('Sesión vencida. Entrá de nuevo.'); }
+    if (!r.ok || j.ok === false) throw new Error(j.error || 'Error ' + r.status);
+    return j;
+  }
+  function mostrarLogin() { $('login').classList.remove('oculto'); $('form').classList.add('oculto'); }
+  $('entrar').onclick = async function () {
+    var pin = $('pin').value.trim(); if (!/^\d{6,12}$/.test(pin)) return msg('loginMsg', 'err', 'El PIN son entre 6 y 12 números.');
+    $('entrar').disabled = true; msg('loginMsg', 'info', 'Verificando…');
+    try { var j = await api('/api/audio/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: pin }) }); token = j.token; sessionStorage.setItem('subirToken', token); $('pin').value = ''; msg('loginMsg', '', ''); await cargar(); }
+    catch (e) { msg('loginMsg', 'err', e.message); } finally { $('entrar').disabled = false; }
+  };
+  async function cargar() {
+    E = await api('/api/audio/estado');
+    $('login').classList.add('oculto'); $('form').classList.remove('oculto');
+    $('maxmb').textContent = E.maxMB;
+    if (!E.configurado) msg('aviso', 'info', 'Todavía falta conectar la clave de GitHub en Render. Hasta entonces no se puede subir.');
+    var c = $('cat'); c.innerHTML = '';
+    E.categorias.forEach(function (x) { var o = document.createElement('option'); o.value = x.id; o.textContent = x.nombre; c.appendChild(o); });
+    var o = document.createElement('option'); o.value = '__nueva'; o.textContent = '＋ Categoría nueva'; c.appendChild(o);
+    pintarLibros();
+  }
+  function pintarLibros() {
+    var cat = $('cat').value; $('catNuevaBox').classList.toggle('oculto', cat !== '__nueva');
+    var l = $('libro'); l.innerHTML = '';
+    if (cat !== '__nueva') E.libros.filter(function (x) { return x.categoria === cat; }).forEach(function (x) { var o = document.createElement('option'); o.value = x.id; o.textContent = x.titulo; l.appendChild(o); });
+    var n = document.createElement('option'); n.value = '__nuevo'; n.textContent = '＋ Libro nuevo'; l.appendChild(n);
+    if (cat === '__nueva') l.value = '__nuevo';
+    pintarLibro();
+  }
+  function libroSel() { return E.libros.filter(function (x) { return x.id === $('libro').value; })[0] || null; }
+  function pintarLibro() {
+    var nuevo = $('libro').value === '__nuevo'; $('nuevoBox').classList.toggle('oculto', !nuevo);
+    var lb = libroSel(); var porCap = nuevo ? $('tipo').value === 'capitulos' : (lb && !lb.completo);
+    $('numBox').classList.toggle('oculto', !porCap);
+  }
+  $('cat').onchange = pintarLibros; $('libro').onchange = pintarLibro; $('tipo').onchange = pintarLibro;
+
+  function duracion(file) {
+    return new Promise(function (ok) {
+      var a = new Audio(); var u = URL.createObjectURL(file); var listo = false;
+      function fin(v) { if (listo) return; listo = true; URL.revokeObjectURL(u); ok(v); }
+      a.preload = 'metadata'; a.onloadedmetadata = function () { var s = a.duration; if (!isFinite(s)) return fin(''); var h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60); if (m === 60) { h++; m = 0; } fin(h ? h + ' h ' + m + ' min' : Math.max(1, m) + ' min'); };
+      a.onerror = function () { fin(''); }; setTimeout(function () { fin(''); }, 8000); a.src = u;
+    });
+  }
+  async function parte(id, n, blob) {
+    for (var i = 0; i < 4; i++) {
+      try { await api('/api/audio/parte?id=' + id + '&n=' + n, { method: 'PUT', body: blob, headers: { 'Content-Type': 'application/octet-stream' } }); return; }
+      catch (e) { if (i === 3 || /Sesión/.test(e.message)) throw e; await new Promise(function (r) { setTimeout(r, 1500 * (i + 1)); }); }
+    }
+  }
+  var subiendo = false;
+  $('subir').onclick = async function () {
+    if (subiendo) return;
+    var f = $('archivo').files[0]; if (!f) return msg('estado', 'err', 'Elegí un archivo MP3.');
+    if (!/\.mp3$/i.test(f.name)) return msg('estado', 'err', 'Tiene que ser un archivo .mp3');
+    if (f.size > E.maxMB * 1048576) return msg('estado', 'err', 'Pesa ' + Math.round(f.size / 1048576) + ' MB. El máximo es ' + E.maxMB + ' MB.');
+    var nuevo = $('libro').value === '__nuevo', lb = libroSel();
+    var body = { tamano: f.size, nombreArchivo: f.name, categoria: $('cat').value, categoriaNueva: $('catNueva').value, libro: nuevo ? '' : $('libro').value, titulo: $('titulo').value, autor: $('autor').value, tipo: $('tipo').value, numero: $('numero').value };
+    if (nuevo ? body.tipo === 'completo' : (lb && lb.completo)) body.duracion = await duracion(f);
+    subiendo = true; $('subir').disabled = true; $('barra').classList.remove('oculto'); msg('estado', 'info', 'Preparando…');
+    try {
+      var ini = await api('/api/audio/iniciar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      for (var n = 0; n < ini.partes; n++) {
+        msg('estado', 'info', 'Subiendo… ' + Math.round(n / ini.partes * 100) + '%. No cierres esta pantalla.');
+        $('barraI').style.width = Math.round(n / ini.partes * 90) + '%';
+        await parte(ini.id, n, f.slice(n * ini.parteBytes, Math.min(f.size, (n + 1) * ini.parteBytes)));
+      }
+      $('barraI').style.width = '92%'; msg('estado', 'info', 'Guardando en GitHub… puede tardar un minuto.');
+      await api('/api/audio/terminar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: ini.id }) });
+      for (;;) {
+        await new Promise(function (r) { setTimeout(r, 2500); });
+        var p = await api('/api/audio/progreso?id=' + ini.id);
+        if (p.fase === 'error') throw new Error(p.error || 'Falló');
+        if (p.fase === 'listo') {
+          $('barraI').style.width = '100%';
+          var d = msg('estado', 'ok', '¡Listo! ' + p.nombre + ' ya está en la biblioteca. En unos minutos el sitio se actualiza solo. '); var a = document.createElement('a'); a.className = 'link'; a.href = p.libroUrl; a.textContent = 'Abrir el libro'; d.appendChild(a);
+          $('archivo').value = ''; $('numero').value = ''; E = await api('/api/audio/estado'); break;
+        }
+      }
+    } catch (e) { msg('estado', 'err', e.message + ' Si se cortó, volvé a tocar Subir.'); }
+    finally { subiendo = false; $('subir').disabled = false; }
+  };
+  if (token) cargar().catch(function () { mostrarLogin(); });
+})();
+</script>
+</body>
+</html>
