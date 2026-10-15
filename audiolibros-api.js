@@ -6,6 +6,7 @@ const os = require('os');
 const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
+const { execFile } = require('child_process');
 
 const PUBLIC = path.join(__dirname, 'public');
 const AUDIO_DIR = path.join(PUBLIC, 'audiolibros');
@@ -108,17 +109,6 @@ function gh(metodo, ruta, cuerpo, extraLargo) {
     if (datos) r.end(datos); else if (extraLargo) extraLargo.escribir(r); else r.end();
   });
 }
-// Crea el blob del mp3 mandándolo en base64 por pedazos (no carga todo en memoria).
-function crearBlob(archivo, tam) {
-  const largo = Math.ceil(tam / 3) * 4;
-  const pre = Buffer.from('{"encoding":"base64","content":"'), post = Buffer.from('"}');
-  return gh('POST', '/repos/' + REPO + '/git/blobs', null, { largo: pre.length + largo + post.length, escribir: (r) => {
-    r.write(pre);
-    const s = fs.createReadStream(archivo, { highWaterMark: 3 * 256 * 1024 });
-    s.on('data', (c) => { if (!r.write(c.toString('base64'))) { s.pause(); r.once('drain', () => s.resume()); } });
-    s.on('end', () => r.end(post)); s.on('error', (e) => r.destroy(e));
-  } });
-}
 async function listarDir(carpeta) {
   try { const l = await gh('GET', '/repos/' + REPO + '/contents/public/audiolibros/' + carpeta + '?ref=' + BRANCH); return Array.isArray(l) ? l.map((x) => x.name) : []; }
   catch (e) { if (e.status === 404) return []; throw e; }
@@ -129,17 +119,47 @@ async function leerManifiestoRemoto() {
 }
 
 // ---------- Publicación ----------
+// Git pack transport avoids the REST API's per-blob input limit.
+// Shallow, filtered fetches never check out existing audio files.
+function git(args, cwd, input) {
+  return new Promise((ok, mal) => {
+    const auth = Buffer.from('x-access-token:' + process.env.GITHUB_TOKEN).toString('base64');
+    const env = Object.assign({}, process.env, {
+      GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_COUNT: '3',
+      GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader', GIT_CONFIG_VALUE_0: 'Authorization: Basic ' + auth,
+      GIT_CONFIG_KEY_1: 'credential.helper', GIT_CONFIG_VALUE_1: '',
+      GIT_CONFIG_KEY_2: 'pack.threads', GIT_CONFIG_VALUE_2: '1',
+      GIT_AUTHOR_NAME: 'La Ruta del Bienestar', GIT_AUTHOR_EMAIL: 'noreply@larutadelbienestar.ar',
+      GIT_COMMITTER_NAME: 'La Ruta del Bienestar', GIT_COMMITTER_EMAIL: 'noreply@larutadelbienestar.ar'
+    });
+    const child = execFile('git', args, { cwd, env, timeout: 180000, maxBuffer: 2 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (!err) return ok(stdout.trim());
+      const e = new Error(err.code === 'ENOENT' ? 'El servidor necesita Git para guardar audios grandes.' :
+        /Authentication failed|403|401|could not read Username/i.test(stderr || '') ? 'GitHub no aceptó la clave (token).' :
+        /non-fast-forward|fetch first|stale info|cannot lock ref/i.test(stderr || '') ? 'La biblioteca cambió durante la subida. Reintentando.' :
+        'No se pudo guardar el audio en GitHub. Probá de nuevo.');
+      e.reintentar = /non-fast-forward|fetch first|stale info|cannot lock ref/i.test(stderr || '');
+      mal(e);
+    });
+    child.stdin.on('error', () => {});
+    child.stdin.end(input === undefined ? undefined : input);
+  });
+}
 async function publicar(s) {
   const rutaRepo = 'public/audiolibros/' + s.libroId + '/' + s.nombre;
-  const blob = await crearBlob(s.archivo, s.tamano);
+  const repo = path.join(s.dir, 'git'); fs.mkdirSync(repo);
+  await git(['init', '--bare', repo], s.dir);
+  await git(['remote', 'add', 'origin', 'https://github.com/' + REPO + '.git'], repo);
+  const blob = await git(['hash-object', '-w', s.archivo], repo);
   s.fase = 'guardando';
-  let ultimo;
   for (let intento = 0; intento < 3; intento++) {
-    const ref = await gh('GET', '/repos/' + REPO + '/git/ref/heads/' + BRANCH);
-    const commitBase = await gh('GET', '/repos/' + REPO + '/git/commits/' + ref.object.sha);
-    // Se vuelve a leer el manifiesto del repo para no pisar cambios hechos a mano
-    const man = await leerManifiestoRemoto();
+    await git(['fetch', '--depth=1', '--filter=blob:none', '--no-tags', 'origin', 'refs/heads/' + BRANCH], repo);
+    const base = await git(['rev-parse', 'FETCH_HEAD'], repo);
+    const archivos = await git(['ls-tree', '--name-only', base, '--', MANIFEST_REL], repo);
+    const man = archivos ? JSON.parse(await git(['show', base + ':' + MANIFEST_REL], repo)) : { categorias: [], libros: [] };
     man.categorias = man.categorias || []; man.libros = man.libros || [];
+    const existente = await git(['ls-tree', '--name-only', base, '--', rutaRepo], repo);
+    if (existente) throw new Error('Ese audio ya existe en la biblioteca. No se reemplazó.');
     if (s.catNueva && !man.categorias.some((c) => c.id === s.catNueva.id) && !CATS_BASE.some((c) => c.id === s.catNueva.id)) man.categorias.push(s.catNueva);
     let l = man.libros.find((x) => x.id === s.libroId);
     if (!l && s.libroNuevo) { l = JSON.parse(JSON.stringify(s.libroNuevo)); man.libros.push(l); }
@@ -147,16 +167,17 @@ async function publicar(s) {
     if (!l) { l = { id: s.libroId, total: 0 }; man.libros.push(l); }
     if (s.numero) l.total = Math.max(l.total || 0, s.numero);
     if (s.duracion !== undefined && l.completo) l.duracion = s.duracion;
-    const arbol = await gh('POST', '/repos/' + REPO + '/git/trees', { base_tree: commitBase.tree.sha, tree: [
-      { path: rutaRepo, mode: '100644', type: 'blob', sha: blob.sha },
-      { path: MANIFEST_REL, mode: '100644', type: 'blob', content: JSON.stringify(man, null, 2) + '\n' } ] });
-    const commit = await gh('POST', '/repos/' + REPO + '/git/commits', { message: 'Audiolibro: ' + s.etiqueta + ' (subido desde el celu)', tree: arbol.sha, parents: [ref.object.sha] });
+    const manifestBlob = await git(['hash-object', '-w', '--stdin'], repo, JSON.stringify(man, null, 2) + '\n');
+    await git(['read-tree', base], repo);
+    await git(['update-index', '--add', '--cacheinfo', '100644', blob, rutaRepo], repo);
+    await git(['update-index', '--add', '--cacheinfo', '100644', manifestBlob, MANIFEST_REL], repo);
+    const tree = await git(['write-tree'], repo);
+    const commit = await git(['commit-tree', tree, '-p', base], repo, 'Audiolibro: ' + s.etiqueta + ' (subido desde el celu)\n');
     try {
-      await gh('PATCH', '/repos/' + REPO + '/git/refs/heads/' + BRANCH, { sha: commit.sha, force: false });
-      return { commit: commit.sha, rutaRepo, man };
-    } catch (e) { ultimo = e; if (e.status !== 422 && e.status !== 409) throw e; }
+      await git(['push', 'origin', commit + ':refs/heads/' + BRANCH], repo);
+      return { commit, rutaRepo, man };
+    } catch (e) { if (!e.reintentar || intento === 2) throw e; }
   }
-  throw ultimo || new Error('No se pudo guardar en GitHub');
 }
 
 function limpiarSubida(s) { try { fs.rmSync(s.dir, { recursive: true, force: true }); } catch (e) {} }
@@ -224,7 +245,7 @@ async function manejar(req, res, ruta) {
     if (!sesionValida(req)) return json(res, 401, { ok: false, error: 'Sesión vencida' }), true;
 
     if (ruta === '/api/audio/estado' && req.method === 'GET') {
-      return json(res, 200, { ok: true, configurado: configurado(), maxMB: Math.floor(MAX_BYTES / 1048576), parteBytes: PARTE, categorias: todasLasCategorias(), libros: todosLosLibros() }), true;
+      return json(res, 200, { ok: true, transporte: 'git-pack-v2', configurado: configurado(), maxMB: Math.floor(MAX_BYTES / 1048576), parteBytes: PARTE, categorias: todasLasCategorias(), libros: todosLosLibros() }), true;
     }
     if (!configurado()) return json(res, 503, { ok: false, error: 'Falta la clave de GitHub en Render (GITHUB_TOKEN).' }), true;
 
