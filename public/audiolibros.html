@@ -269,7 +269,7 @@
     try { guardado = JSON.parse(localStorage.getItem(ks + 'disp') || '{}'); } catch (e) {}
     var res = [];
     for (var n = 1; n <= libro.total; n++) (function (n) {
-      res.push(fetch(libro.base + libro.archivo + pad(n) + '.mp3', { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+      res.push(fetch((libro.archivos && libro.archivos[n - 1]) || (libro.base + libro.archivo + pad(n) + '.mp3'), { method: 'HEAD', cache: 'no-store' }).then(function (r) {
         var tipo = (r.headers.get('content-type') || '').toLowerCase();
         return [n, r.ok && tipo.indexOf('text/html') < 0 && tipo.indexOf('text/plain') < 0];
       }, function () { return [n, null]; }));
