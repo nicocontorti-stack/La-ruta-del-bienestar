@@ -27,7 +27,7 @@ const TMP = path.join(os.tmpdir(), 'audiolibros-subida');
 const LEGACY = [
   { id: 'vuelta80', categoria: 'novela', titulo: 'La vuelta al mundo en 80 días', archivo: 'capitulo-', completo: false },
   { id: 'lenguaje-corporal', categoria: 'autoayuda', titulo: 'Lenguaje corporal', archivo: 'parte-', completo: false },
-  { id: 'ganar-amigos', categoria: 'autoayuda', titulo: 'Cómo ganar amigos e influir sobre las personas', archivo: 'audio-', completo: true }
+  { id: 'ganar-amigos', categoria: 'autoayuda', titulo: 'Cómo ganar amigos e influir sobre las personas', archivo: 'capitulo-', completo: false, previos: 2 }
 ];
 const CATS_BASE = [{ id: 'novela', nombre: 'Novela', icono: '📖' }, { id: 'autoayuda', nombre: 'Autoayuda', icono: '🌱' }];
 
@@ -262,7 +262,7 @@ async function manejar(req, res, ruta) {
       let catNueva = null;
       if (existente) {
         s.libroId = existente.id; s.etiqueta = existente.titulo;
-        s.completo = existente.completo; s.archivoPre = existente.archivo;
+        s.completo = existente.completo; s.archivoPre = existente.archivo; s.previos = existente.previos || 0;
       } else {
         const titulo = limpio(b.titulo, 80); if (titulo.length < 2) return json(res, 400, { ok: false, error: 'Falta el título del libro.' }), true;
         let cat = limpio(b.categoria, 40);
@@ -288,9 +288,10 @@ async function manejar(req, res, ruta) {
       if (s.completo) numero = 1;
       const nombres = await listarDir(s.libroId);
       if (!(numero >= 1 && numero <= 999)) {
-        let max = 0; nombres.forEach((n) => { const m = new RegExp('^' + s.archivoPre + '(\\d+)\\.mp3$').exec(n); if (m) max = Math.max(max, parseInt(m[1], 10)); });
+        let max = s.previos || 0; nombres.forEach((n) => { const m = new RegExp('^' + s.archivoPre + '(\\d+)\\.mp3$').exec(n); if (m) max = Math.max(max, parseInt(m[1], 10)); });
         numero = max + 1;
       }
+      if (s.previos && numero <= s.previos) return json(res, 409, { ok: false, error: 'Los capítulos 1 a ' + s.previos + ' de este libro ya están. Elegí un número mayor o dejalo vacío.' }), true;
       s.numero = numero; s.nombre = s.archivoPre + pad(numero) + '.mp3';
       if (nombres.indexOf(s.nombre) !== -1) return json(res, 409, { ok: false, error: 'Ya existe ' + s.nombre + ' en ese libro. Elegí otro número.' }), true;
       if (b.total && s.libroNuevo && !s.completo) s.libroNuevo.total = Math.min(999, Math.max(1, parseInt(b.total, 10) || 1));
