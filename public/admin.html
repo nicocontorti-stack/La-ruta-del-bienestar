@@ -107,6 +107,18 @@
     #hoja-impresion { display: block !important; }
     .eti-hoja-caja { width: 62mm; margin: 0 auto; border: 1px solid #000; border-radius: 0; }
   }
+
+  .a4-hoja { width: 190mm; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm; }
+  .a4-celda { border: 1px dashed #999; padding: 2mm; text-align: center; overflow: hidden; break-inside: avoid; background: #fff; }
+  .a4-celda .n { font-weight: 700; font-size: 9pt; line-height: 1.2; overflow-wrap: anywhere; }
+  .a4-celda .p { font-size: 9pt; }
+  .a4-celda img { width: 100%; height: auto; display: block; }
+  .a4-celda .c { font-size: 7pt; letter-spacing: 1px; }
+  .a4-previa { zoom: .42; border: 1px solid var(--borde); background: #eee; }
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    .a4-previa { zoom: 1; }
+  }
 </style>
 </head>
 <body>
@@ -319,6 +331,21 @@
       <p id="etiquetas-repetidos" class="aviso card oculto" style="padding:8px"></p>
       <input id="buscar-etiqueta" placeholder="Buscar producto..." oninput="pintarEtiquetas()">
       <div id="lista-etiquetas" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h2>Hoja A4 de etiquetas</h2>
+      <p class="res-nota">Elegí los productos con + y cuántas etiquetas de cada uno. Se arma una hoja A4 con varias etiquetas lista para imprimir o guardar como PDF y recortar.</p>
+      <label style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input id="a4-con-precio" type="checkbox" checked style="width:auto"> Con precio</label>
+      <input id="buscar-a4" placeholder="Buscar producto..." oninput="pintarA4()">
+      <div id="lista-a4" style="margin-top:8px"></div>
+      <p id="a4-resumen" class="res-nota" style="margin:8px 0 0"></p>
+      <button class="prim" onclick="armarHojaA4()">Armar hoja A4</button>
+    </div>
+    <div id="a4-previa-card" class="card oculto">
+      <h2>Vista previa de la hoja</h2>
+      <div class="a4-previa"><div id="a4-previa-contenido"></div></div>
+      <button class="prim" onclick="imprimirHojaA4()">Imprimir o guardar PDF</button>
+      <button style="width:100%;margin-top:8px" onclick="cerrarHojaA4()">Volver</button>
     </div>
     <div id="etiqueta-previa" class="card oculto">
       <h2>Etiqueta</h2>
@@ -1129,15 +1156,70 @@
     img.src = e.img;
   }
 
+  // ---------- Hoja A4 de etiquetas ----------
+  let a4Sel = {};
+  let a4Html = '';
+  function pintarA4() {
+    if (typeof datosCargados !== 'undefined' && !datosCargados) return;
+    const q = $('buscar-a4').value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const lista = todosLosProductos().filter((p) => !q || p.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q));
+    $('lista-a4').innerHTML = lista.map((p) => {
+      const n = a4Sel[p.nombre] || 0;
+      const nom = JSON.stringify(p.nombre).replace(/"/g, '&quot;');
+      return `<div class="eti-fila"><div class="nom">${esc(p.nombre)}<small>${esc(codigoDe(p).codigo)}</small></div>`
+        + `<div class="qty"><button type="button" aria-label="Quitar una etiqueta de ${esc(p.nombre)}" onclick="cambiarA4(${nom},-1)" ${n ? '' : 'disabled'}>−</button>`
+        + `<b aria-label="${n} etiquetas">${n}</b><button type="button" aria-label="Agregar una etiqueta de ${esc(p.nombre)}" onclick="cambiarA4(${nom},1)">+</button></div></div>`;
+    }).join('') || '<p class="venta-vacio">No hay productos con ese nombre.</p>';
+    pintarResumenA4();
+  }
+  function cambiarA4(nombre, d) {
+    a4Sel[nombre] = Math.max(0, (a4Sel[nombre] || 0) + d);
+    if (!a4Sel[nombre]) delete a4Sel[nombre];
+    pintarA4();
+  }
+  function pintarResumenA4() {
+    const total = Object.values(a4Sel).reduce((sum, n) => sum + n, 0);
+    const prods = Object.keys(a4Sel).length;
+    const hojas = Math.max(1, Math.ceil(total / 21));
+    $('a4-resumen').textContent = total
+      ? `${total} etiquetas de ${prods} ${prods === 1 ? 'producto' : 'productos'} · ${hojas} ${hojas === 1 ? 'hoja' : 'hojas'} aprox.`
+      : 'Todavía no elegiste productos.';
+  }
+  function armarHojaA4() {
+    const nombres = Object.keys(a4Sel);
+    if (!nombres.length) return aviso('Elegí al menos un producto con +', '#b3261e');
+    const conPrecio = $('a4-con-precio').checked;
+    const celdas = [];
+    nombres.forEach((nombre) => {
+      const e = armarEtiqueta(nombre, conPrecio);
+      if (!e) return;
+      const nomCorto = e.nombre.length > 40 ? e.nombre.slice(0, 39) + '…' : e.nombre;
+      for (let i = 0; i < a4Sel[nombre]; i++) {
+        celdas.push(`<div class="a4-celda"><div class="n">${esc(nomCorto)}</div>${e.precioTxt ? `<div class="p">${esc(e.precioTxt)}</div>` : ''}<img src="${e.img}" alt=""><div class="c">${esc(e.codigo)}</div></div>`);
+      }
+    });
+    if (!celdas.length) return aviso('No se pudo armar la hoja', '#b3261e');
+    a4Html = `<div class="a4-hoja">${celdas.join('')}</div>`;
+    $('a4-previa-contenido').innerHTML = a4Html;
+    $('a4-previa-card').classList.remove('oculto');
+    $('a4-previa-card').scrollIntoView({ behavior: 'smooth' });
+  }
+  function imprimirHojaA4() {
+    if (!a4Html) return aviso('Primero armá la hoja', '#b3261e');
+    $('hoja-impresion').innerHTML = a4Html;
+    window.print();
+  }
+  function cerrarHojaA4() { $('a4-previa-card').classList.add('oculto'); }
+
   // ---------- Navegación ----------
   function mostrar(v) {
     ['resumen', 'vender', 'deudas', 'comprar', 'stock', 'etiquetas', 'menor', 'numeros'].forEach((x) => $('v-' + x).classList.toggle('oculto', x !== v));
     if (v === 'comprar') pintarBusquedaCompra();
-    if (v === 'etiquetas') pintarEtiquetas();
+    if (v === 'etiquetas') { pintarEtiquetas(); pintarA4(); }
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('activo', b.dataset.v === v));
     window.scrollTo(0, 0);
   }
-  function pintarTodo() { pintarDeudas(); pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarMenor(); pintarNumeros(); pintarCategorias(); if (typeof etiquetaSel !== 'undefined' && !$('v-etiquetas').classList.contains('oculto')) pintarEtiquetas(); }
+  function pintarTodo() { pintarDeudas(); pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarMenor(); pintarNumeros(); pintarCategorias(); if (typeof etiquetaSel !== 'undefined' && !$('v-etiquetas').classList.contains('oculto')) { pintarEtiquetas(); pintarA4(); } }
   document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => mostrar(b.dataset.v)));
   document.querySelectorAll('#pago button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
   document.querySelectorAll('#pago-rapido button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago-rapido button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
