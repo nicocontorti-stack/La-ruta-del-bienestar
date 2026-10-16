@@ -91,6 +91,22 @@
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   td { padding: 6px 4px; border-bottom: 1px solid #eee; vertical-align: top; }
   td.n { text-align: right; white-space: nowrap; }
+
+  .eti-fila { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee; }
+  .eti-fila .nom { flex: 1; min-width: 0; font-size: 15px; }
+  .eti-fila .nom small { display: block; color: #666; margin-top: 2px; }
+  .eti-fila canvas { width: 116px; flex: none; background: #fff; border: 1px solid var(--borde); border-radius: 6px; }
+  .eti-hoja-caja { border: 1px dashed #999; border-radius: 8px; padding: 12px; text-align: center; background: #fff; }
+  .eti-hoja-caja .n { font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
+  .eti-hoja-caja .p { font-size: 15px; margin-top: 2px; }
+  .eti-hoja-caja img { width: 100%; height: auto; display: block; }
+  .eti-hoja-caja .c { font-size: 13px; letter-spacing: 1px; margin-top: 2px; }
+  #hoja-impresion { display: none; }
+  @media print {
+    body > header, body > main, body > nav, body > .msg { display: none !important; }
+    #hoja-impresion { display: block !important; }
+    .eti-hoja-caja { width: 62mm; margin: 0 auto; border: 1px solid #000; border-radius: 0; }
+  }
 </style>
 </head>
 <body>
@@ -294,6 +310,27 @@
     </div>
   </section>
 
+
+  <!-- Códigos y etiquetas -->
+  <section id="v-etiquetas" class="oculto">
+    <div class="card">
+      <h2>Códigos de barras y etiquetas</h2>
+      <p class="res-nota">Códigos internos del negocio, para etiquetar los packs y ordenar tu stock. Si un producto no tiene código cargado en Stock, se usa uno automático que sale del nombre y no cambia nunca. No sirven para vender en comercios.</p>
+      <p id="etiquetas-repetidos" class="aviso card oculto" style="padding:8px"></p>
+      <input id="buscar-etiqueta" placeholder="Buscar producto..." oninput="pintarEtiquetas()">
+      <div id="lista-etiquetas" style="margin-top:8px"></div>
+    </div>
+    <div id="etiqueta-previa" class="card oculto">
+      <h2>Etiqueta</h2>
+      <label style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input id="eti-con-precio" type="checkbox" checked style="width:auto" onchange="verEtiqueta(etiquetaSel)"> Con precio</label>
+      <div class="eti-hoja-caja" id="etiqueta-caja"></div>
+      <button class="prim" onclick="imprimirEtiqueta()">Imprimir o guardar PDF</button>
+      <button style="width:100%;margin-top:8px" onclick="descargarEtiqueta()">Descargar imagen</button>
+      <button style="width:100%;margin-top:8px" onclick="cerrarEtiqueta()">Volver</button>
+      <p class="res-nota" style="margin-top:10px">En el celu, "Imprimir" abre las opciones del teléfono: podés elegir una impresora o "Guardar como PDF".</p>
+    </div>
+  </section>
+
   <!-- Precios por menor -->
   <section id="v-menor" class="oculto">
     <div class="card">
@@ -343,6 +380,7 @@
     </div>
   </section>
 </main>
+<div id="hoja-impresion"></div>
 
 <nav id="nav" class="oculto">
   <button data-v="resumen" class="activo"><b>🏠</b>Resumen</button>
@@ -350,6 +388,7 @@
   <button data-v="deudas"><b>💵</b>Deudas</button>
   <button data-v="comprar"><b>📦</b>Comprar</button>
   <button data-v="stock"><b>📋</b>Stock</button>
+  <button data-v="etiquetas"><b>🔖</b>Códigos</button>
   <button data-v="menor"><b>🏷️</b>Menor</button>
   <button data-v="numeros"><b>📈</b>Números</button>
 </nav>
@@ -968,14 +1007,137 @@
     $('ult-compras').innerHTML = datos.compras.slice(-10).reverse().map((c) => `<tr><td>${f(c.fecha)}<br><small>${esc(c.proveedor || '')}${c.cargo ? ' · cargó ' + esc(c.cargo) : ''}</small></td><td>${c.proveedor === 'Gasto general' ? esc(c.producto) : esc(c.producto) + ' x' + cant(c.cantidad)}</td><td class="n">${plata(c.total)}</td></tr>`).join('') || '<tr><td style="color:#777">Sin compras todavía.</td></tr>';
   }
 
+  // ---------- Códigos de barras y etiquetas (uso interno) ----------
+  // Code 128B: arranque 104, valor de cada caracter = codigo ASCII - 32, verificacion mod 103, cierre 106.
+  const CODE128_PATRONES = ['11011001100','11001101100','11001100110','10010011000','10010001100','10001001100','10011001000','10011000100','10001100100','11001001000',
+  '11001000100','11000100100','10110011100','10011011100','10011001110','10111001100','10011101100','10011100110','11001110010','11001011100',
+  '11001001110','11011100100','11001110100','11101101110','11101001100','11100101100','11100100110','11101100100','11100110100','11100110010',
+  '11011011000','11011000110','11000110110','10100011000','10001011000','10001000110','10110001000','10001101000','10001100010','11010001000',
+  '11000101000','11000100010','10110111000','10110001110','10001101110','10111011000','10111000110','10001110110','11101110110','11010001110',
+  '11000101110','11011101000','11011100010','11011101110','11101011000','11101000110','11100010110','11101101000','11101100010','11100011010',
+  '11101111010','11001000010','11110001010','10100110000','10100001100','10010110000','10010000110','10000101100','10000100110','10110010000',
+  '10110000100','10011010000','10011000010','10000110100','10000110010','11000010010','11001010000','11110111010','11000010100','10001111010',
+  '10100111100','10010111100','10010011110','10111100100','10011110100','10011110010','11110100100','11110010100','11110010010','11011011110',
+  '11011110110','11110110110','10101111000','10100011110','10001011110','10111101000','10111100010','11110101000','11110100010','10111011110',
+  '10111101110','11101011110','11110101110','11010000100','11010010000','11010011100','1100011101011'];
+  function bitsCodigo128(texto) {
+    const limpio = String(texto).replace(/[^\x20-\x7E]/g, '');
+    if (!limpio) return null;
+    const valores = [104];
+    for (let i = 0; i < limpio.length; i++) valores.push(limpio.charCodeAt(i) - 32);
+    let suma = valores[0];
+    for (let i = 1; i < valores.length; i++) suma += valores[i] * i;
+    valores.push(suma % 103, 106);
+    return valores.map((v) => CODE128_PATRONES[v]).join('');
+  }
+  function dibujarCodigo(canvas, texto, altoBarras) {
+    const bits = bitsCodigo128(texto);
+    if (!bits) return false;
+    const modulo = 2, margen = 20, altoTexto = 18;
+    canvas.width = bits.length * modulo + margen * 2;
+    canvas.height = (altoBarras || 60) + altoTexto + 8;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000';
+    for (let i = 0; i < bits.length; i++) if (bits[i] === '1') ctx.fillRect(margen + i * modulo, 0, modulo, altoBarras || 60);
+    ctx.font = '13px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(texto, canvas.width / 2, (altoBarras || 60) + 14);
+    return true;
+  }
+  // Código interno: el que cargó en Stock si existe; si no, uno estable del nombre (LRB-######).
+  function codigoDe(p) {
+    const cargado = (p.codigo || '').trim().replace(/[^\x20-\x7E]/g, '');
+    if (cargado) return { codigo: cargado, automatico: false };
+    let h = 0;
+    for (let i = 0; i < p.nombre.length; i++) h = (h * 31 + p.nombre.charCodeAt(i)) >>> 0;
+    return { codigo: 'LRB-' + String(100000 + (h % 900000)), automatico: true };
+  }
+  let etiquetaSel = null;
+  function pintarEtiquetas() {
+    if (typeof datosCargados !== 'undefined' && !datosCargados) return;
+    const q = $('buscar-etiqueta').value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const lista = todosLosProductos().filter((p) => !q || p.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q));
+    const conteo = {};
+    lista.forEach((p) => { const c = codigoDe(p).codigo; conteo[c] = (conteo[c] || 0) + 1; });
+    const repetidos = Object.keys(conteo).filter((c) => conteo[c] > 1);
+    const av = $('etiquetas-repetidos');
+    if (repetidos.length) { av.textContent = 'Ojo: el código ' + repetidos.join(', ') + ' está repetido. Cargale un código distinto a uno de esos productos en Stock.'; av.classList.remove('oculto'); }
+    else av.classList.add('oculto');
+    $('lista-etiquetas').innerHTML = lista.map((p, i) => {
+      const c = codigoDe(p);
+      return `<div class="eti-fila"><div class="nom">${esc(p.nombre)}<small>${esc(c.codigo)}${c.automatico ? ' · automático' : ''}</small></div>`
+        + `<canvas data-eti="${i}"></canvas><button onclick="verEtiqueta(${JSON.stringify(p.nombre).replace(/"/g, '&quot;')})">Etiqueta</button></div>`;
+    }).join('') || '<p class="venta-vacio">No hay productos con ese nombre.</p>';
+    $('lista-etiquetas').querySelectorAll('canvas').forEach((cv) => {
+      const p = lista[Number(cv.dataset.eti)];
+      if (p && dibujarCodigo(cv, codigoDe(p).codigo, 34)) cv.style.display = ''; else cv.style.display = 'none';
+    });
+  }
+  function armarEtiqueta(nombre, conPrecio) {
+    const p = todosLosProductos().find((x) => x.nombre === nombre);
+    if (!p) return null;
+    const c = codigoDe(p);
+    const precio = precioDeVenta(p);
+    const canvas = document.createElement('canvas');
+    if (!dibujarCodigo(canvas, c.codigo, 70)) return null;
+    return { nombre: p.nombre, codigo: c.codigo, precioTxt: conPrecio && precio > 0 ? plata(precio) : '', img: canvas.toDataURL('image/png') };
+  }
+  function verEtiqueta(nombre) {
+    if (!nombre) return;
+    etiquetaSel = nombre;
+    const e = armarEtiqueta(nombre, $('eti-con-precio').checked);
+    if (!e) return aviso('No se pudo armar la etiqueta', '#b3261e');
+    $('etiqueta-caja').innerHTML = `<div class="n">${esc(e.nombre)}</div>${e.precioTxt ? `<div class="p">${esc(e.precioTxt)}</div>` : ''}<img src="${e.img}" alt="Código de barras ${esc(e.codigo)}"><div class="c">${esc(e.codigo)}</div>`;
+    $('etiqueta-previa').classList.remove('oculto');
+    $('etiqueta-previa').scrollIntoView({ behavior: 'smooth' });
+  }
+  function cerrarEtiqueta() { $('etiqueta-previa').classList.add('oculto'); etiquetaSel = null; }
+  function imprimirEtiqueta() {
+    if (!etiquetaSel) return;
+    const e = armarEtiqueta(etiquetaSel, $('eti-con-precio').checked);
+    if (!e) return aviso('No se pudo armar la etiqueta', '#b3261e');
+    $('hoja-impresion').innerHTML = `<div class="eti-hoja-caja"><div class="n">${esc(e.nombre)}</div>${e.precioTxt ? `<div class="p">${esc(e.precioTxt)}</div>` : ''}<img src="${e.img}" alt=""><div class="c">${esc(e.codigo)}</div></div>`;
+    window.print();
+  }
+  function descargarEtiqueta() {
+    if (!etiquetaSel) return;
+    const e = armarEtiqueta(etiquetaSel, $('eti-con-precio').checked);
+    if (!e) return aviso('No se pudo armar la etiqueta', '#b3261e');
+    // Etiqueta de ~62 x 40 mm a 300 dpi para que se vea bien al imprimir.
+    const ancho = 740, alto = 470;
+    const lienzo = document.createElement('canvas');
+    lienzo.width = ancho; lienzo.height = alto;
+    const ctx = lienzo.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, ancho, alto);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(6, 6, ancho - 12, alto - 12);
+    ctx.fillStyle = '#000'; ctx.textAlign = 'center';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    const nombre = e.nombre.length > 30 ? e.nombre.slice(0, 29) + '…' : e.nombre;
+    ctx.fillText(nombre, ancho / 2, 52);
+    let y = 70;
+    if (e.precioTxt) { ctx.font = '28px system-ui, sans-serif'; ctx.fillText(e.precioTxt, ancho / 2, y + 28); y += 40; }
+    const img = new Image();
+    img.onload = () => {
+      const margen = 30, disp = ancho - margen * 2, altoImg = Math.min(img.height * (disp / img.width), alto - y - 60);
+      ctx.drawImage(img, margen, y + 8, disp, altoImg);
+      const a = document.createElement('a');
+      a.href = lienzo.toDataURL('image/png');
+      a.download = 'etiqueta-' + e.codigo.replace(/[^\w-]/g, '') + '.png';
+      a.click();
+    };
+    img.onerror = () => aviso('No se pudo armar la imagen', '#b3261e');
+    img.src = e.img;
+  }
+
   // ---------- Navegación ----------
   function mostrar(v) {
-    ['resumen', 'vender', 'deudas', 'comprar', 'stock', 'menor', 'numeros'].forEach((x) => $('v-' + x).classList.toggle('oculto', x !== v));
+    ['resumen', 'vender', 'deudas', 'comprar', 'stock', 'etiquetas', 'menor', 'numeros'].forEach((x) => $('v-' + x).classList.toggle('oculto', x !== v));
     if (v === 'comprar') pintarBusquedaCompra();
+    if (v === 'etiquetas') pintarEtiquetas();
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('activo', b.dataset.v === v));
     window.scrollTo(0, 0);
   }
-  function pintarTodo() { pintarDeudas(); pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarMenor(); pintarNumeros(); pintarCategorias(); }
+  function pintarTodo() { pintarDeudas(); pintarResumen(); pintarBusquedaVenta(); pintarCarrito(); pintarStock(); pintarMenor(); pintarNumeros(); pintarCategorias(); if (typeof etiquetaSel !== 'undefined' && !$('v-etiquetas').classList.contains('oculto')) pintarEtiquetas(); }
   document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => mostrar(b.dataset.v)));
   document.querySelectorAll('#pago button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
   document.querySelectorAll('#pago-rapido button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#pago-rapido button').forEach((x) => x.classList.remove('activo')); b.classList.add('activo'); }));
@@ -990,7 +1152,6 @@
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js");}</script>
 </body>
 </html>
-
 
 
 
