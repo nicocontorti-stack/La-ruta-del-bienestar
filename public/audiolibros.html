@@ -409,7 +409,14 @@
     mensaje('Guardando ' + u + ' ' + n + '… puede tardar un poco.');
     fetch(url(n)).then(function (r) {
       if (!r.ok) throw new Error('http');
-      return caches.open(CACHE).then(function (c) { return c.put(url(n), r); });
+      var esperado = +(r.headers.get('content-length') || 0);
+      return caches.open(CACHE).then(function (c) {
+        return c.put(url(n), r).then(function () { return c.match(url(n)); }).then(function (g) {
+          return g.blob().then(function (b) {
+            if (esperado && b.size !== esperado) return c.delete(url(n)).then(function () { throw new Error('tamano'); });
+          });
+        });
+      });
     }).then(function () {
       delete guardando[n]; offline[n] = true; dibujarLista();
       mensaje('Listo: ' + u + ' ' + n + ' ya se escucha sin internet.');
@@ -487,11 +494,17 @@
     $('tTotal').textContent = durGuardada(n) ? fmt(durGuardada(n)) : '0:00';
     if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (e) {} blobUrl = null; }
     audio.src = url(n);
-    if (offline[n] && hayCache && !navigator.onLine) {
+    if (offline[n] && hayCache) {
       caches.open(CACHE).then(function (c) { return c.match(url(n)); }).then(function (r) { return r ? r.blob() : null; }).then(function (b) {
         if (b && actual === n) {
           blobUrl = URL.createObjectURL(b); audio.src = blobUrl; audio.load();
           if (reproducir) audio.play().catch(function () {});
+          if (navigator.onLine) fetch(url(n), { method: 'HEAD', cache: 'no-store' }).then(function (h) {
+            var t = +(h.headers.get('content-length') || 0);
+            if (h.ok && t && t !== b.size) fetch(url(n)).then(function (r2) {
+              if (r2.ok) return caches.open(CACHE).then(function (c) { return c.put(url(n), r2); });
+            }).catch(function () {});
+          }).catch(function () {});
         }
       }).catch(function () {});
     }
@@ -628,4 +641,3 @@
 </script>
 </body>
 </html>
-
