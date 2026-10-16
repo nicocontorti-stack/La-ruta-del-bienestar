@@ -338,6 +338,7 @@ function kickoff(kicker){
   p.face=p.side===0?-Math.PI/2:Math.PI/2});
   M.ball.x=PW/2;M.ball.y=PH/2;M.ball.vx=0;M.ball.vy=0;M.ball.owner=kicker;M.ball.recv=null;
   kicker.x=PW/2;kicker.y=PH/2+(kicker.side===0?20:-20);
+  if(kicker.side===0)M.controlled=kicker;
   M.state="pause";M.pause=1.0;
 }
 function updScore(){$("sG").textContent=M.scoreA+" - "+M.scoreB+"  ⏱ "+fmtClock()}
