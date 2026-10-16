@@ -335,7 +335,6 @@
     <div class="card">
       <h2>Hoja A4 de etiquetas</h2>
       <p class="res-nota">Elegí los productos con + y cuántas etiquetas de cada uno. Se arma una hoja A4 con varias etiquetas lista para imprimir o guardar como PDF y recortar.</p>
-      <label style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input id="a4-con-precio" type="checkbox" checked style="width:auto"> Con precio</label>
       <input id="buscar-a4" placeholder="Buscar producto..." oninput="pintarA4()">
       <div id="lista-a4" style="margin-top:8px"></div>
       <p id="a4-resumen" class="res-nota" style="margin:8px 0 0"></p>
@@ -349,7 +348,6 @@
     </div>
     <div id="etiqueta-previa" class="card oculto">
       <h2>Etiqueta</h2>
-      <label style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input id="eti-con-precio" type="checkbox" checked style="width:auto" onchange="verEtiqueta(etiquetaSel)"> Con precio</label>
       <div class="eti-hoja-caja" id="etiqueta-caja"></div>
       <button class="prim" onclick="imprimirEtiqueta()">Imprimir o guardar PDF</button>
       <button style="width:100%;margin-top:8px" onclick="descargarEtiqueta()">Descargar imagen</button>
@@ -1112,7 +1110,7 @@
   function verEtiqueta(nombre) {
     if (!nombre) return;
     etiquetaSel = nombre;
-    const e = armarEtiqueta(nombre, $('eti-con-precio').checked);
+    const e = armarEtiqueta(nombre, false);
     if (!e) return aviso('No se pudo armar la etiqueta', '#b3261e');
     $('etiqueta-caja').innerHTML = `<div class="n">${esc(e.nombre)}</div>${e.precioTxt ? `<div class="p">${esc(e.precioTxt)}</div>` : ''}<img src="${e.img}" alt="Código de barras ${esc(e.codigo)}"><div class="c">${esc(e.codigo)}</div>`;
     $('etiqueta-previa').classList.remove('oculto');
@@ -1121,14 +1119,14 @@
   function cerrarEtiqueta() { $('etiqueta-previa').classList.add('oculto'); etiquetaSel = null; }
   function imprimirEtiqueta() {
     if (!etiquetaSel) return;
-    const e = armarEtiqueta(etiquetaSel, $('eti-con-precio').checked);
+    const e = armarEtiqueta(etiquetaSel, false);
     if (!e) return aviso('No se pudo armar la etiqueta', '#b3261e');
     $('hoja-impresion').innerHTML = `<div class="eti-hoja-caja"><div class="n">${esc(e.nombre)}</div>${e.precioTxt ? `<div class="p">${esc(e.precioTxt)}</div>` : ''}<img src="${e.img}" alt=""><div class="c">${esc(e.codigo)}</div></div>`;
     window.print();
   }
   function descargarEtiqueta() {
     if (!etiquetaSel) return;
-    const e = armarEtiqueta(etiquetaSel, $('eti-con-precio').checked);
+    const e = armarEtiqueta(etiquetaSel, false);
     if (!e) return aviso('No se pudo armar la etiqueta', '#b3261e');
     // Etiqueta de ~62 x 40 mm a 300 dpi para que se vea bien al imprimir.
     const ancho = 740, alto = 470;
@@ -1188,7 +1186,7 @@
   function armarHojaA4() {
     const nombres = Object.keys(a4Sel);
     if (!nombres.length) return aviso('Elegí al menos un producto con +', '#b3261e');
-    const conPrecio = $('a4-con-precio').checked;
+    const conPrecio = false;
     const celdas = [];
     nombres.forEach((nombre) => {
       const e = armarEtiqueta(nombre, conPrecio);
