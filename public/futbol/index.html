@@ -41,6 +41,10 @@
     background:linear-gradient(0deg,#041d0e 72%,rgba(4,29,14,0)); padding:16px 8px calc(12px + env(safe-area-inset-bottom)); }
   #teamActions .pick { margin:0; font-size:15px; font-weight:800; color:#ffe94a; }
   #teamActions .btn:disabled { opacity:.45; }
+  .fixbar { position:fixed; left:0; right:0; bottom:0; z-index:12; flex-direction:column; gap:4px;
+    background:linear-gradient(0deg,#041d0e 72%,rgba(4,29,14,0)); padding:16px 8px calc(12px + env(safe-area-inset-bottom)); }
+  #scr-bracket, #scr-names { padding-bottom:130px; }
+  #btnPlayNext { animation:pulse 1s infinite; }
   #btnGo:not(:disabled) { animation:pulse 1s infinite; font-size:19px; padding:14px 26px; }
   @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.08); } }
   #namelist { width:min(420px,92vw); margin-top:8px; }
@@ -146,8 +150,8 @@
   <h2 class="stitle">Tus jugadores</h2>
   <div class="subtitle">Cambiales los nombres si querés. El 1 es el arquero.</div>
   <div id="namelist"></div>
-  <div class="row" style="margin-top:14px">
-    <button class="btn small green" id="btnNamesOk">Listo ✔</button>
+  <div class="row fixbar">
+    <button class="btn green" id="btnNamesOk">Listo ✔</button>
   </div>
 </div>
 
@@ -155,7 +159,9 @@
   <h2 class="stitle" id="brTitle">Torneo</h2>
   <div class="subtitle" id="brSub"></div>
   <div id="brTable"></div>
-  <button class="btn green" id="btnPlayNext" style="margin-top:16px">Jugar siguiente partido →</button>
+  <div class="row fixbar" id="brActions">
+  <button class="btn green" id="btnPlayNext">▶ ¡JUGAR MI PARTIDO!</button>
+  </div>
 </div>
 
 <div class="screen" id="scr-end">
@@ -748,7 +754,8 @@ if(keys["arrowup"]||keys["w"])dy-=1;if(keys["arrowdown"]||keys["s"])dy+=1;
 joy.dx=dx;joy.dy=dy;joy.on=!!(dx||dy)},50);
 
 // que no scrollee la página con el dedo
-document.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
+document.addEventListener("touchmove",e=>{
+if($("hud").classList.contains("on")||$("penBox").classList.contains("on"))e.preventDefault()},{passive:false});
 document.addEventListener("contextmenu",e=>e.preventDefault());
 
 /* ================= LOOP ================= */
