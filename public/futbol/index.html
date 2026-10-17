@@ -123,7 +123,15 @@
       <span class="opt" data-d="120">2 min</span>
     </div>
   </div>
-  <div style="margin-top:16px; width:100%">
+  <div style="margin-top:14px">
+    <div class="subtitle" style="margin-bottom:2px">Nivel:</div>
+    <div class="row" id="diffRow">
+      <span class="opt" data-dif="easy">🐣 Principiante</span>
+      <span class="opt sel" data-dif="mid">⚽ Intermedio</span>
+      <span class="opt" data-dif="pro">🔥 Profesional</span>
+    </div>
+  </div>
+  <div style="margin-top:12px; width:100%">
     <button class="btn green" id="btnTourney">🏆 JUGAR TORNEO DE 64</button>
     <button class="btn" id="btnContinue" style="display:none">▶ SEGUIR EL TORNEO</button>
     <button class="btn alt" id="btnQuick">⚡ PARTIDO RÁPIDO</button>
@@ -235,6 +243,13 @@ let myTeamIdx=-1, mode="tourney"; // tourney | quick
 let myNames=null, scorers={}, matchLenPicked=false;
 let T=null; // torneo
 const SAVE_KEY="futbol64_save_v1";
+const DIFFS={
+  easy:{name:"Principiante",pace:0.70,ai:0.55,ball:0.85,aiSteal:0.30,humanSteal:1.4,aiShoot:0.35,gkAI:0.65},
+  mid:{name:"Intermedio",pace:1,ai:1,ball:1,aiSteal:1,humanSteal:1,aiShoot:1,gkAI:1},
+  pro:{name:"Profesional",pace:1.02,ai:1.18,ball:1.08,aiSteal:1.35,humanSteal:0.8,aiShoot:1.7,gkAI:1.12}
+};
+let diffKey="mid", diff=DIFFS.mid;
+try{const dk=localStorage.getItem("futbol64_diff");if(dk&&DIFFS[dk]){diffKey=dk;diff=DIFFS[dk]}}catch(e){}
 function saveT(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({T,myTeamIdx,myNames,scorers,halfLen}))}catch(e){}}
 function loadT(){try{const s=localStorage.getItem(SAVE_KEY);if(!s)return false;
 const d=JSON.parse(s);if(!d.T||d.T.done)return false;T=d.T;myTeamIdx=d.myTeamIdx;myNames=d.myNames;
@@ -247,6 +262,11 @@ function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.re
 if(id)$(id).classList.add("on")}
 function setHud(on){$("hud").classList.toggle("on",on)}
 
+document.querySelectorAll("#diffRow .opt").forEach(o=>{
+if(o.dataset.dif===diffKey)o.classList.add("sel");else if(diffKey!=="mid")o.classList.remove("sel");
+o.onclick=()=>{document.querySelectorAll("#diffRow .opt").forEach(x=>x.classList.remove("sel"));
+o.classList.add("sel");diffKey=o.dataset.dif;diff=DIFFS[diffKey];
+try{localStorage.setItem("futbol64_diff",diffKey)}catch(e){}}});
 document.querySelectorAll("#durRow .opt").forEach(o=>{
 o.onclick=()=>{document.querySelectorAll("#durRow .opt").forEach(x=>x.classList.remove("sel"));
 o.classList.add("sel");halfLen=+o.dataset.d;beep(600,.05,"square",.08)}});
@@ -317,7 +337,7 @@ function showBracket(){
   const rn=ROUND_NAMES[T.cur], nm=myNextMatch();
   $("brTitle").textContent="🏆 "+(T.cur===5?"LA FINAL":("Ronda: "+rn));
   if(nm){const opp=nm.a===myTeamIdx?nm.b:nm.a;
-  $("brSub").innerHTML="Tu próximo partido: <b>"+TEAMS[myTeamIdx][0]+"</b> vs <b>"+TEAMS[opp][0]+"</b>";
+  $("brSub").innerHTML="Tu próximo partido: <b>"+TEAMS[myTeamIdx][0]+"</b> vs <b>"+TEAMS[opp][0]+"</b><br><span style=\'font-size:12px;color:#c9f2d4\'>Nivel: "+diff.name+" (se cambia en la pantalla principal)</span>";
   $("btnPlayNext").style.display="block"}else{$("brSub").textContent="";$("btnPlayNext").style.display="none"}
   const r=T.rounds[T.cur];let h='<table class="br"><tr><th colspan="3">'+rn+"</th></tr>";
   r.forEach(m=>{const me=(m.a===myTeamIdx||m.b===myTeamIdx)?' class="me"':"";
@@ -343,7 +363,7 @@ function startMatch(tA,tB,bracketMatch){
   ball:{x:PW/2,y:PH/2,vx:0,vy:0,owner:null,recv:null},
   scoreA:0,scoreB:0,half:1,clock:halfLen,state:"kickoff",pause:1.2,stealCd:0,
   controlled:null,aiThink:0,chargeT:-1,over:false,lastScorer:"",
-  speedAI:3.9+(TEAMS[tB][3]-70)/55, gkThrow:0};
+  speedAI:(3.9+(TEAMS[tB][3]-70)/55)*diff.ai, gkThrow:0};
   M.controlled=M.psA[5];
   kickoff(M.psA[9]); // arranca el humano
   $("sA").textContent=TEAMS[tA][0].toUpperCase().slice(0,12);
@@ -424,7 +444,8 @@ function stepMatch(dt){
     // robos
     M.stealCd-=dt/60;
     const foes=o.side===0?M.psB:M.psA;
-    if(M.stealCd<=0)for(const f of foes){if(dist2(f,o)<17*17&&Math.random()<0.045*dt){
+    const stealMul=o.side===0?diff.aiSteal:diff.humanSteal;
+    if(M.stealCd<=0)for(const f of foes){if(dist2(f,o)<17*17&&Math.random()<0.045*stealMul*dt){
       B.owner=f;M.stealCd=0.45;kickSnd();
       if(f.side===1){const n=nearest(M.psA,B.x,B.y,null);if(n)M.controlled=n}break}}
   } else {
@@ -472,7 +493,7 @@ function aiWithBall(p,mates,foes,isMate){
   const dGoal=Math.hypot(goalX-p.x,goalY-p.y);
   // tirar si está cerca
   const range=isMate?0:330;
-  if(!isMate&&dGoal<range&&Math.random()<0.05){
+  if(!isMate&&dGoal<range&&Math.random()<0.05*diff.aiShoot){
     const pow=Math.min(1,0.45+dGoal/450);
     shoot(p,pow);return}
   // presión: rival cerca → pasar
@@ -492,7 +513,7 @@ function doPass(p,t){
   const lead=14, tx=t.x+t.vx*lead*0.3, ty=t.y+t.vy*lead*0.3;
   const a=Math.atan2(ty-p.y,tx-p.x);
   M.ball.owner=null;M.ball.recv=t;M.lastTouch=p;
-  M.ball.vx=Math.cos(a)*11;M.ball.vy=Math.sin(a)*11;kickSnd()}
+  M.ball.vx=Math.cos(a)*11*diff.ball;M.ball.vy=Math.sin(a)*11*diff.ball;kickSnd()}
 function shoot(p,pow){
   const goalY=p.side===0?0:PH;
   let tx=PW/2+(Math.random()-0.5)*120, ty=goalY;
@@ -500,7 +521,7 @@ function shoot(p,pow){
     const a=Math.atan2(joy.dy,joy.dx);tx=p.x+Math.cos(a)*400;ty=p.y+Math.sin(a)*400;
     if((p.side===0&&ty>p.y-60))tx=PW/2,ty=0;} // evita tiro al revés
   const a=Math.atan2(ty-p.y,tx-p.x)+ (Math.random()-0.5)*0.10;
-  const sp=9.5+pow*9;
+  const sp=(9.5+pow*9)*diff.ball;
   M.ball.owner=null;M.ball.recv=null;M.lastTouch=p;
   M.ball.x=p.x+Math.cos(a)*14;M.ball.y=p.y+Math.sin(a)*14;
   M.ball.vx=Math.cos(a)*sp;M.ball.vy=Math.sin(a)*sp;kickSnd();beep(90,.15,"sawtooth",.12)}
@@ -511,7 +532,7 @@ function gkLogic(g,dt){
   let tx=PW/2+(B.x-PW/2)*0.55;
   if(toward)tx=B.x;
   tx=Math.max(MOUTH_X0-16,Math.min(MOUTH_X1+16,tx));
-  moveToward(g,tx,ownY,toward?6.0:3.4,dt);
+  moveToward(g,tx,ownY,(toward?6.0:3.4)*(g.side===1?diff.gkAI:1),dt);
   // atajar
   if(!B.owner&&dist2(g,B)<22*22&&Math.hypot(B.vx,B.vy)>5){
     const hard=Math.hypot(B.vx,B.vy)>12;
@@ -761,7 +782,7 @@ document.addEventListener("contextmenu",e=>e.preventDefault());
 /* ================= LOOP ================= */
 let lastT=performance.now();
 function loop(t){const dt=Math.min(3,(t-lastT)/16.667);lastT=t;
-if(M)stepMatch(dt);requestAnimationFrame(loop)}
+if(M)stepMatch(dt*diff.pace);requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 
 /* ================= ARRANQUE ================= */
