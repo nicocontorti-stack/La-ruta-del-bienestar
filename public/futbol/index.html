@@ -13,7 +13,7 @@
   #cv { position:fixed; inset:0; display:block; }
   .screen { position:fixed; inset:0; display:none; flex-direction:column; align-items:center;
     justify-content:flex-start; background:linear-gradient(160deg,#0d4d26,#072b14 70%);
-    overflow-y:auto; padding:18px 14px 40px; z-index:10; }
+    overflow-y:auto; padding:18px 14px 40px; z-index:10; touch-action:pan-y; -webkit-overflow-scrolling:touch; }
   .screen.on { display:flex; }
   h1.logo { font-size:44px; letter-spacing:2px; margin-top:8vh; text-shadow:0 3px 0 #063;
     color:#ffe94a; font-style:italic; font-weight:900; }
@@ -36,6 +36,13 @@
   .tcell .kit i { position:absolute; left:0; top:55%; right:0; bottom:0; display:block; }
   .tcell.sel { border-color:#ffe94a; background:rgba(255,233,74,.18); }
   .row { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  #scr-teams { padding-bottom:130px; }
+  #teamActions { position:fixed; left:0; right:0; bottom:0; z-index:12; flex-direction:column; gap:4px;
+    background:linear-gradient(0deg,#041d0e 72%,rgba(4,29,14,0)); padding:16px 8px calc(12px + env(safe-area-inset-bottom)); }
+  #teamActions .pick { margin:0; font-size:15px; font-weight:800; color:#ffe94a; }
+  #teamActions .btn:disabled { opacity:.45; }
+  #btnGo:not(:disabled) { animation:pulse 1s infinite; font-size:19px; padding:14px 26px; }
+  @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.08); } }
   #namelist { width:min(420px,92vw); margin-top:8px; }
   #namelist .nrow { display:flex; align-items:center; gap:8px; margin:5px 0; }
   #namelist .num { width:30px; text-align:right; font-weight:900; color:#ffe94a; }
@@ -125,10 +132,13 @@
   <h2 class="stitle">Elegí tu selección</h2>
   <div class="subtitle">Tocá un país. Después podés cambiar los nombres de tus 11 jugadores.</div>
   <div id="teamgrid"></div>
-  <div class="row" style="margin-top:14px">
-    <button class="btn small alt" id="btnBack1">← Volver</button>
-    <button class="btn small green" id="btnNames" disabled>Nombres ✎</button>
-    <button class="btn small green" id="btnGo" disabled>Jugar →</button>
+  <div class="row" id="teamActions">
+    <div class="pick" id="pickHint">👆 Tocá un país para elegir tu selección</div>
+    <div class="row">
+      <button class="btn small alt" id="btnBack1">← Volver</button>
+      <button class="btn small green" id="btnNames" disabled>Nombres ✎</button>
+      <button class="btn small green" id="btnGo" disabled>▶ ¡JUGAR!</button>
+    </div>
   </div>
 </div>
 
@@ -245,12 +255,13 @@ function refreshTitle(){$("btnContinue").style.display=(T&&!T.done)?"block":"non
 
 /* ---- elegir equipo ---- */
 function openTeams(){buildGrid();$("btnGo").disabled=true;$("btnNames").disabled=true;
-myTeamIdx=-1;show("scr-teams")}
+myTeamIdx=-1;$("pickHint").textContent="👆 Tocá un país para elegir tu selección";show("scr-teams")}
 function buildGrid(){const g=$("teamgrid");g.innerHTML="";
 TEAMS.forEach((t,i)=>{const c=document.createElement("div");c.className="tcell";
 c.innerHTML='<div class="kit" style="background:'+t[1]+'"><i style="background:'+t[2]+'"></i></div>'+t[0];
 c.onclick=()=>{document.querySelectorAll(".tcell").forEach(x=>x.classList.remove("sel"));
 c.classList.add("sel");myTeamIdx=i;$("btnGo").disabled=false;$("btnNames").disabled=false;
+$("pickHint").textContent="✅ Elegiste "+t[0]+" - ¡ahora tocá JUGAR!";
 beep(700,.06,"square",.1)};g.appendChild(c)})}
 $("btnNames").onclick=()=>{openNames()};
 $("btnGo").onclick=()=>{if(myTeamIdx<0)return;startAfterPick()};
