@@ -119,6 +119,25 @@
     @page { size: A4; margin: 10mm; }
     .a4-previa { zoom: 1; }
   }
+
+  .a4v-hoja { width: 210mm; height: 297mm; box-sizing: border-box; padding: 6mm 5mm; margin: 0 auto; background: #fff; display: grid; grid-template-columns: repeat(5, 40mm); grid-template-rows: repeat(17, 16.7mm); page-break-after: always; break-after: page; }
+  .a4v-hoja:last-child { page-break-after: auto; break-after: auto; }
+  .a4v-celda { box-sizing: border-box; width: 40mm; height: 16.7mm; border: .2mm dotted #aaa; padding: .6mm 2mm 0; text-align: center; overflow: hidden; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; }
+  .a4v-celda svg { display: block; height: 5.4mm; shape-rendering: crispEdges; flex: none; }
+  .a4v-celda .c { font-size: 5.5pt; line-height: 1; letter-spacing: .2mm; margin-top: .3mm; font-family: Arial, sans-serif; }
+  .a4v-celda .v { font-size: 6pt; font-weight: 700; line-height: 1; letter-spacing: .3mm; margin-top: .5mm; font-family: Arial, sans-serif; }
+  .a4v-celda .f { display: flex; align-items: flex-end; justify-content: center; gap: .6mm; margin-top: .6mm; font-size: 8pt; line-height: 1; font-family: Arial, sans-serif; }
+  .a4v-celda .f i { display: inline-block; width: 8mm; border-bottom: .25mm solid #000; height: 2.8mm; }
+  .a4v-celda .f b { font-weight: 400; line-height: 1; }
+  .a4-previa.v { zoom: .3; }
+  .a4-previa.v .a4v-hoja { border: 1px solid #999; margin-bottom: 16px; }
+  .a4-opc { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 15px; }
+  .a4-opc input { width: auto; margin: 0; }
+  .qty .llenar { font-size: 12px; padding: 4px 8px; margin-left: 6px; width: auto; }
+  @media print {
+    .a4-previa.v { zoom: 1; border: 0; }
+    .a4-previa.v .a4v-hoja { border: 0; margin-bottom: 0; }
+  }
 </style>
 </head>
 <body>
@@ -335,6 +354,7 @@
     <div class="card">
       <h2>Hoja A4 de etiquetas</h2>
       <p class="res-nota">Elegí los productos con + y cuántas etiquetas de cada uno. Se arma una hoja A4 con varias etiquetas lista para imprimir o guardar como PDF y recortar.</p>
+      <label class="a4-opc"><input type="checkbox" id="a4-venc" onchange="pintarA4()"> <span>Con vencimiento (5 por fila, 17 filas, 85 etiquetas por hoja)</span></label>
       <input id="buscar-a4" placeholder="Buscar producto..." oninput="pintarA4()">
       <div id="lista-a4" style="margin-top:8px"></div>
       <p id="a4-resumen" class="res-nota" style="margin:8px 0 0"></p>
@@ -1157,16 +1177,18 @@
   // ---------- Hoja A4 de etiquetas ----------
   let a4Sel = {};
   let a4Html = '';
+  let a4Venc = false;
   function pintarA4() {
     if (typeof datosCargados !== 'undefined' && !datosCargados) return;
     const q = $('buscar-a4').value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const lista = todosLosProductos().filter((p) => !q || p.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q));
+    const venc = !!($('a4-venc') && $('a4-venc').checked);
     $('lista-a4').innerHTML = lista.map((p) => {
       const n = a4Sel[p.nombre] || 0;
       const nom = JSON.stringify(p.nombre).replace(/"/g, '&quot;');
       return `<div class="eti-fila"><div class="nom">${esc(p.nombre)}<small>${esc(codigoDe(p).codigo)}</small></div>`
         + `<div class="qty"><button type="button" aria-label="Quitar una etiqueta de ${esc(p.nombre)}" onclick="cambiarA4(${nom},-1)" ${n ? '' : 'disabled'}>−</button>`
-        + `<b aria-label="${n} etiquetas">${n}</b><button type="button" aria-label="Agregar una etiqueta de ${esc(p.nombre)}" onclick="cambiarA4(${nom},1)">+</button></div></div>`;
+        + `<b aria-label="${n} etiquetas">${n}</b><button type="button" aria-label="Agregar una etiqueta de ${esc(p.nombre)}" onclick="cambiarA4(${nom},1)">+</button>${venc ? `<button type="button" class="llenar" onclick="llenarA4(${nom})">Hoja entera</button>` : ''}</div></div>`;
     }).join('') || '<p class="venta-vacio">No hay productos con ese nombre.</p>';
     pintarResumenA4();
   }
@@ -1175,17 +1197,54 @@
     if (!a4Sel[nombre]) delete a4Sel[nombre];
     pintarA4();
   }
+  function llenarA4(nombre) { a4Sel[nombre] = 85; pintarA4(); }
   function pintarResumenA4() {
     const total = Object.values(a4Sel).reduce((sum, n) => sum + n, 0);
     const prods = Object.keys(a4Sel).length;
-    const hojas = Math.max(1, Math.ceil(total / 21));
+    const venc = !!($('a4-venc') && $('a4-venc').checked);
+    const hojas = Math.max(1, Math.ceil(total / (venc ? 85 : 21)));
     $('a4-resumen').textContent = total
-      ? `${total} etiquetas de ${prods} ${prods === 1 ? 'producto' : 'productos'} · ${hojas} ${hojas === 1 ? 'hoja' : 'hojas'} aprox.`
+      ? `${total} etiquetas de ${prods} ${prods === 1 ? 'producto' : 'productos'} · ${hojas} ${hojas === 1 ? 'hoja' : 'hojas'}${venc ? '' : ' aprox.'}`
       : 'Todavía no elegiste productos.';
+  }
+  function svgCodigo(texto) {
+    const bits = bitsCodigo128(texto);
+    if (!bits) return '';
+    let r = '', i = 0;
+    while (i < bits.length) {
+      if (bits[i] === '1') { let j = i; while (j < bits.length && bits[j] === '1') j++; r += `M${i} 0h${j - i}v1h-${j - i}z`; i = j; } else i++;
+    }
+    const ancho = Math.min(35, bits.length * 0.25).toFixed(2);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${bits.length} 1" preserveAspectRatio="none" width="${ancho}mm" height="5.4mm" role="img" aria-label="Código de barras ${esc(texto)}"><path d="${r}" fill="#000"/></svg>`;
+  }
+  function armarHojaVencimiento() {
+    const celdas = [];
+    Object.keys(a4Sel).forEach((nombre) => {
+      const p = todosLosProductos().find((x) => x.nombre === nombre);
+      if (!p) return;
+      const cod = codigoDe(p).codigo;
+      const svg = svgCodigo(cod);
+      if (!svg) return;
+      for (let i = 0; i < a4Sel[nombre]; i++) {
+        celdas.push(`<div class="a4v-celda">${svg}<div class="c">${esc(cod)}</div><div class="v">VENCIMIENTO</div><div class="f"><i></i><b>/</b><i></i><b>/</b><i></i></div></div>`);
+      }
+    });
+    if (!celdas.length) return aviso('No se pudo armar la hoja', '#b3261e');
+    const hojas = [];
+    for (let i = 0; i < celdas.length; i += 85) hojas.push(`<div class="a4v-hoja">${celdas.slice(i, i + 85).join('')}</div>`);
+    a4Html = hojas.join('');
+    a4Venc = true;
+    $('a4-previa-contenido').parentNode.classList.add('v');
+    $('a4-previa-contenido').innerHTML = a4Html;
+    $('a4-previa-card').classList.remove('oculto');
+    $('a4-previa-card').scrollIntoView({ behavior: 'smooth' });
   }
   function armarHojaA4() {
     const nombres = Object.keys(a4Sel);
     if (!nombres.length) return aviso('Elegí al menos un producto con +', '#b3261e');
+    a4Venc = false;
+    $('a4-previa-contenido').parentNode.classList.remove('v');
+    if ($('a4-venc') && $('a4-venc').checked) return armarHojaVencimiento();
     const conPrecio = false;
     const celdas = [];
     nombres.forEach((nombre) => {
@@ -1205,6 +1264,14 @@
   function imprimirHojaA4() {
     if (!a4Html) return aviso('Primero armá la hoja', '#b3261e');
     $('hoja-impresion').innerHTML = a4Html;
+    let est = null;
+    if (a4Venc) {
+      est = document.createElement('style');
+      est.textContent = '@page { size: A4; margin: 0; } @media print { #hoja-impresion { zoom: 1; } }';
+      document.head.appendChild(est);
+    }
+    const limpiar = () => { if (est && est.parentNode) est.parentNode.removeChild(est); window.removeEventListener('afterprint', limpiar); };
+    window.addEventListener('afterprint', limpiar);
     window.print();
   }
   function cerrarHojaA4() { $('a4-previa-card').classList.add('oculto'); }
@@ -1232,7 +1299,6 @@
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js");}</script>
 </body>
 </html>
-
 
 
 
