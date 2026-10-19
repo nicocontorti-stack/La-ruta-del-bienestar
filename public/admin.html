@@ -120,7 +120,7 @@
     .a4-previa { zoom: 1; }
   }
 
-  .a4v-hoja { width: 210mm; height: 297mm; box-sizing: border-box; padding: 6mm 5mm; margin: 0 auto; background: #fff; display: grid; grid-template-columns: repeat(5, 40mm); grid-template-rows: repeat(17, 16.7mm); page-break-after: always; break-after: page; }
+  .a4v-hoja { width: 210mm; height: 296.5mm; box-sizing: border-box; padding: 6mm 5mm; margin: 0 auto; background: #fff; display: grid; grid-template-columns: repeat(5, 40mm); grid-template-rows: repeat(17, 16.7mm); page-break-after: always; break-after: page; }
   .a4v-hoja:last-child { page-break-after: auto; break-after: auto; }
   .a4v-celda { box-sizing: border-box; width: 40mm; height: 16.7mm; border: .2mm dotted #aaa; padding: .6mm 2mm 0; text-align: center; overflow: hidden; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; }
   .a4v-celda svg { display: block; height: 5.4mm; shape-rendering: crispEdges; flex: none; }
@@ -1267,7 +1267,7 @@
     let est = null;
     if (a4Venc) {
       est = document.createElement('style');
-      est.textContent = '@page { size: A4; margin: 0; } @media print { #hoja-impresion { zoom: 1; } }';
+      est.textContent = '@page { size: A4; margin: 0; } @media print { html, body { padding: 0 !important; margin: 0 !important; background: #fff !important; min-height: 0 !important; height: auto !important; } }';
       document.head.appendChild(est);
     }
     const limpiar = () => { if (est && est.parentNode) est.parentNode.removeChild(est); window.removeEventListener('afterprint', limpiar); };
