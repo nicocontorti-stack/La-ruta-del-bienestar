@@ -122,14 +122,14 @@
 
   .a4v-hoja { width: 210mm; height: 296.5mm; box-sizing: border-box; padding: 6mm 5mm; margin: 0 auto; background: #fff; display: grid; grid-template-columns: repeat(5, 40mm); grid-template-rows: repeat(15, 18.9mm); page-break-after: always; break-after: page; }
   .a4v-hoja:last-child { page-break-after: auto; break-after: auto; }
-  .a4v-celda { box-sizing: border-box; width: 40mm; height: 18.9mm; border: .2mm dotted #aaa; padding: .6mm 2mm 0; text-align: center; overflow: hidden; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; }
-  .a4v-celda .n { font-size: 6.5pt; font-weight: 700; line-height: 1.05; max-height: 4.9mm; width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; margin-bottom: .5mm; font-family: Arial, sans-serif; }
-  .a4v-celda .n.m { font-size: 5.6pt; line-height: 1.05; max-height: 4.2mm; }
+  .a4v-celda { box-sizing: border-box; width: 40mm; height: 18.9mm; border: .2mm dotted #aaa; padding: .4mm 2mm 0; text-align: center; overflow: hidden; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; }
+  .a4v-celda .n { font-size: 6.5pt; font-weight: 700; line-height: 1.05; max-height: 4.9mm; flex: none; width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; margin-bottom: .3mm; font-family: Arial, sans-serif; }
+  .a4v-celda .n.m { font-size: 5.6pt; line-height: 1.05; max-height: 4.3mm; }
   .a4v-celda svg { display: block; height: 5.4mm; shape-rendering: crispEdges; flex: none; }
-  .a4v-celda .c { font-size: 5.5pt; line-height: 1; letter-spacing: .2mm; margin-top: .3mm; font-family: Arial, sans-serif; }
-  .a4v-celda .v { font-size: 6pt; font-weight: 700; line-height: 1; letter-spacing: .3mm; margin-top: .5mm; font-family: Arial, sans-serif; }
-  .a4v-celda .f { display: flex; align-items: flex-end; justify-content: center; gap: .6mm; margin-top: .6mm; font-size: 8pt; line-height: 1; font-family: Arial, sans-serif; }
-  .a4v-celda .f i { display: inline-block; width: 8mm; border-bottom: .25mm solid #000; height: 2.8mm; }
+  .a4v-celda .c { font-size: 5.5pt; line-height: 1; letter-spacing: .2mm; margin-top: .2mm; flex: none; font-family: Arial, sans-serif; }
+  .a4v-celda .v { font-size: 6pt; font-weight: 700; line-height: 1; letter-spacing: .3mm; margin-top: .3mm; flex: none; font-family: Arial, sans-serif; }
+  .a4v-celda .f { display: flex; align-items: flex-end; justify-content: center; gap: .6mm; margin-top: .4mm; flex: none; font-size: 8pt; line-height: 1; font-family: Arial, sans-serif; }
+  .a4v-celda .f i { display: inline-block; width: 8mm; border-bottom: .25mm solid #000; height: 2.6mm; }
   .a4v-celda .f b { font-weight: 400; line-height: 1; }
   .a4-previa.v { zoom: .3; }
   .a4-previa.v .a4v-hoja { border: 1px solid #999; margin-bottom: 16px; }
@@ -1228,7 +1228,7 @@
       const svg = svgCodigo(cod);
       if (!svg) return;
       for (let i = 0; i < a4Sel[nombre]; i++) {
-        celdas.push(`<div class="a4v-celda"><div class="n${p.nombre.length > 34 ? ' m' : ''}">${esc(p.nombre)}</div>${svg}<div class="c">${esc(cod)}</div><div class="v">VENCIMIENTO</div><div class="f"><i></i><b>/</b><i></i><b>/</b><i></i></div></div>`);
+        celdas.push(`<div class="a4v-celda"><div class="n${p.nombre.length > 28 ? ' m' : ''}">${esc(p.nombre)}</div>${svg}<div class="c">${esc(cod)}</div><div class="v">VENCIMIENTO</div><div class="f"><i></i><b>/</b><i></i><b>/</b><i></i></div></div>`);
       }
     });
     if (!celdas.length) return aviso('No se pudo armar la hoja', '#b3261e');
