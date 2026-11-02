@@ -373,6 +373,13 @@
   // Cada producto puede tener: nombre, precio, foto, descripcion (o presentacion), categoria
   const detalle = (p) => p.descripcion || p.presentacion || '';
   const clave = (p) => p.nombre + '|' + detalle(p);
+  // En el catálogo por menor el precio es por unidad: se oculta el "Por 5 unidades" del pack mayorista.
+  const detalleVisible = (p) => {
+    const d = detalle(p);
+    if (modo !== 'menor' || !/por\s*5\s*unidades/i.test(d)) return d;
+    const base = d.replace(/\s*\n?\s*por\s*5\s*unidades\.?/i, '').replace(/\s*\n\s*/g, ' ').replace(/[.\s]+$/, '').trim();
+    return (base ? base + '. ' : '') + 'Precio por unidad';
+  };
 
   $('modo-mayor').onclick = () => cambiarModo('mayor');
   $('modo-menor').onclick = () => cambiarModo('menor');
@@ -454,7 +461,7 @@
       }
       t.querySelector('.nombre').textContent = p.nombre;
       const d = t.querySelector('.desc');
-      if (detalle(p)) d.textContent = detalle(p); else d.remove();
+      if (detalleVisible(p)) d.textContent = detalleVisible(p); else d.remove();
       if (p.esCombo) { t.classList.add('combo'); }
       const pe = t.querySelector('.precio');
       if (tienePrecio(p)) pe.textContent = plata(p.precio); else { pe.textContent = 'Precio a confirmar'; pe.classList.add('sin-precio'); }
@@ -540,7 +547,7 @@
     const total = items.reduce((s, x) => s + (tienePrecio(x.p) ? x.c * x.p.precio : 0), 0);
     const sinPrecio = items.some((x) => !tienePrecio(x.p));
     const lineas = items.map((x) =>
-      '- ' + x.c + ' x ' + x.p.nombre + (detalle(x.p) ? ' (' + detalle(x.p) + ')' : '') + ' ' + (tienePrecio(x.p) ? plata(x.c * x.p.precio) : '(precio a confirmar)'));
+      '- ' + x.c + ' x ' + x.p.nombre + (detalleVisible(x.p) ? ' (' + detalleVisible(x.p) + ')' : '') + ' ' + (tienePrecio(x.p) ? plata(x.c * x.p.precio) : '(precio a confirmar)'));
     const texto = 'Hola! Quiero hacer este pedido ' + (modo === 'menor' ? 'por menor' : 'por mayor') + ':\n' + lineas.join('\n') + (sinPrecio && !total ? '' : '\nTotal' + (sinPrecio ? ' parcial' : '') + ': ' + plata(total));
     window.location.href = 'https://wa.me/' + numeroPedidos() + '?text=' + encodeURIComponent(texto);
   };
@@ -604,6 +611,7 @@
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js");}</script>
 </body>
 </html>
+
 
 
 
