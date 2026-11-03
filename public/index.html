@@ -73,7 +73,9 @@
   }
   .carrito .num.visible { display: block; }
   .volver-panel { display: none; max-width: 640px; margin: 10px auto 0; padding: 0 16px; }
-  .volver-panel.visible { display: block; }
+    .volver-panel.visible { display: block; }
+  #volver-panel.visible { display: inline-block; }
+  #volver-panel.visible + .volver-panel.visible { display: inline-block; margin-left: 8px; }
   .volver-panel a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px;
     border: 1px solid var(--linea); border-radius: 10px; background: var(--papel);
     color: var(--azul); font-size: .9rem; font-weight: 600; text-decoration: none; }
