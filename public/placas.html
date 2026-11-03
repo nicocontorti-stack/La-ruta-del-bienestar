@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#3F6B2E">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<title>Información del producto | La Ruta del Bienestar</title>
+<meta name="description" content="Placas informativas de productos de La Ruta del Bienestar: buscá una placa, mirala, descargala o compartila.">
+<style>
+  :root {
+    --fondo: #F3F5F0; --papel: #FFFFFF; --tinta: #1F2A1F; --suave: #5B665A;
+    --linea: #D5DBCF; --verde: #3F6B2E; --azul: #1F4E8C; --wa: #1E8E4E;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--fondo); color: var(--tinta);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.4; padding-bottom: 60px; }
+  header { position: sticky; top: 0; z-index: 10; background: var(--papel);
+    box-shadow: 0 2px 8px rgba(0,0,0,.06); padding: 14px 18px; }
+  .marca h1 { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em; color: var(--azul); }
+  .marca p { margin: 0; font-size: .82rem; color: var(--verde); font-weight: 600; }
+  .volver { display: block; padding: 10px 18px; color: var(--verde); font-weight: 600; text-decoration: none; }
+  .intro { padding: 0 18px; color: var(--suave); font-size: .95rem; }
+  .buscador { padding: 8px 18px 0; }
+  .buscador input { width: 100%; padding: 12px 14px; font-size: 1rem; border: 1px solid var(--linea);
+    border-radius: 10px; background: var(--papel); color: var(--tinta); }
+  .contador { padding: 6px 18px 0; margin: 0; font-size: .85rem; color: var(--suave); }
+  .aviso { margin: 8px 18px 0; padding: 10px 12px; background: #E7F0E2; border-radius: 10px;
+    color: var(--verde); font-size: .9rem; }
+  .aviso:empty { display: none; }
+  h2.cat { padding: 18px 18px 4px; margin: 0; font-size: 1.1rem; color: var(--verde); }
+  .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; padding: 8px 18px; }
+  .placa { background: var(--papel); border: 1px solid var(--linea); border-radius: 12px; overflow: hidden;
+    display: flex; flex-direction: column; }
+  .placa .imgbtn { border: 0; padding: 0; background: none; cursor: pointer; }
+  .placa img { width: 100%; height: auto; display: block; }
+  .placa h3 { margin: 8px 10px 4px; font-size: .95rem; }
+  .acciones { display: flex; gap: 6px; padding: 6px 10px 10px; margin-top: auto; }
+  .acciones a, .acciones button { flex: 1; padding: 9px 6px; font-size: .85rem; font-weight: 600;
+    border-radius: 8px; border: 1px solid var(--verde); cursor: pointer; text-align: center; text-decoration: none; }
+  .btn-guardar { background: var(--verde); color: #fff; }
+  .btn-compartir { background: var(--papel); color: var(--verde); }
+  .visor { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.85); display: none;
+    align-items: center; justify-content: center; flex-direction: column; padding: 16px; }
+  .visor.abierto { display: flex; }
+  .visor img { max-width: 100%; max-height: 82vh; border-radius: 8px; }
+  .visor .cerrar { margin-top: 12px; padding: 10px 18px; font-size: 1rem; font-weight: 600;
+    background: var(--papel); color: var(--tinta); border: 0; border-radius: 10px; cursor: pointer; }
+  footer { padding: 24px 18px 0; color: var(--suave); font-size: .85rem; text-align: center; }
+</style>
+</head>
+<body>
+<header><div class="marca"><h1>Información del producto</h1><p>La Ruta del Bienestar</p></div></header>
+<a class="volver" href="/">← Volver al catálogo</a>
+<p class="intro">Buscá una placa para verla, guardarla o compartirla.</p>
+<div class="buscador"><input type="search" id="buscar" placeholder="Buscar producto o categoría" aria-label="Buscar producto o categoría"></div>
+<p class="contador" id="contador"></p>
+<p class="aviso" id="aviso" role="status"></p>
+<main id="lista"></main>
+<div class="visor" id="visor" role="dialog" aria-modal="true">
+  <img id="visor-img" alt="">
+  <button type="button" class="cerrar" id="visor-cerrar">Cerrar</button>
+</div>
+<footer>Placas originales de La Ruta del Bienestar. Sin precios ni información de stock.</footer>
+<script>
+const PLACAS = [{"file": "placa-castanas-de-caju.jpg", "title": "Castañas de cajú", "cat": "Frutos secos"}, {"file": "placa-mani-tostado-con-sal.jpg", "title": "Maní tostado con sal", "cat": "Frutos secos"}, {"file": "placa-garrapinada-de-mani.jpg", "title": "Garrapiñada de maní", "cat": "Frutos secos"}, {"file": "placa-mani-crudo.jpg", "title": "Maní crudo", "cat": "Frutos secos"}, {"file": "placa-mani-sin-sal.jpg", "title": "Maní sin sal", "cat": "Frutos secos"}, {"file": "placa-mix-de-frutos-secos.jpg", "title": "Mix de frutos secos", "cat": "Frutos secos"}, {"file": "placa-nueces.jpg", "title": "Nueces", "cat": "Frutos secos"}, {"file": "placa-pasta-de-mani.jpg", "title": "Pasta de maní", "cat": "Frutos secos"}, {"file": "placa-almendras.jpg", "title": "Almendras", "cat": "Frutos secos"}, {"file": "placa-mani-en-vaina.jpg", "title": "Maní en vaina", "cat": "Frutos secos"}, {"file": "placa-adobo-para-pizza.jpg", "title": "Adobo para pizza", "cat": "Condimentos"}, {"file": "placa-anis.jpg", "title": "Anís", "cat": "Condimentos"}, {"file": "placa-anis-estrellado.jpg", "title": "Anís estrellado", "cat": "Condimentos"}, {"file": "placa-bicarbonato-de-sodio.jpg", "title": "Bicarbonato de sodio", "cat": "Condimentos"}, {"file": "placa-canela-en-polvo.jpg", "title": "Canela en polvo", "cat": "Condimentos"}, {"file": "placa-canela-en-rama.jpg", "title": "Canela en rama", "cat": "Condimentos"}, {"file": "placa-chimichurri.jpg", "title": "Chimichurri", "cat": "Condimentos"}, {"file": "placa-curcuma.jpg", "title": "Cúrcuma", "cat": "Condimentos"}, {"file": "placa-clavo-de-olor.jpg", "title": "Clavo de olor", "cat": "Condimentos"}, {"file": "placa-curry.jpg", "title": "Curry", "cat": "Condimentos"}, {"file": "placa-jengibre-molido.jpg", "title": "Jengibre molido", "cat": "Condimentos"}, {"file": "placa-oregano.jpg", "title": "Orégano", "cat": "Condimentos"}, {"file": "placa-mostaza.jpg", "title": "Mostaza", "cat": "Condimentos"}, {"file": "placa-paprika.jpg", "title": "Paprika", "cat": "Condimentos"}, {"file": "placa-pimienta-blanca.jpg", "title": "Pimienta blanca", "cat": "Condimentos"}, {"file": "placa-pimienta-en-grano.jpg", "title": "Pimienta en grano", "cat": "Condimentos"}, {"file": "placa-pimienta-negra-molida.jpg", "title": "Pimienta negra molida", "cat": "Condimentos"}, {"file": "placa-provenzal.jpg", "title": "Provenzal", "cat": "Condimentos"}, {"file": "placa-comino.jpg", "title": "Comino", "cat": "Condimentos"}, {"file": "placa-ajo-en-polvo.jpg", "title": "Ajo en polvo", "cat": "Condimentos"}, {"file": "placa-aji-molido.jpg", "title": "Ají molido", "cat": "Condimentos"}, {"file": "placa-pimenton-ahumado.jpg", "title": "Pimentón ahumado", "cat": "Condimentos"}, {"file": "placa-pimenton.jpg", "title": "Pimentón", "cat": "Condimentos"}, {"file": "placa-semillas-de-girasol.jpg", "title": "Semillas de girasol", "cat": "Semillas"}, {"file": "placa-lino.jpg", "title": "Lino", "cat": "Semillas"}, {"file": "placa-mix-de-semillas.jpg", "title": "Mix de semillas", "cat": "Semillas"}, {"file": "placa-sesamo-blanco.jpg", "title": "Sésamo blanco", "cat": "Semillas"}, {"file": "placa-sesamo-integral.jpg", "title": "Sésamo integral", "cat": "Semillas"}, {"file": "placa-semillas-de-zapallo.jpg", "title": "Semillas de zapallo", "cat": "Semillas"}, {"file": "placa-chia.jpg", "title": "Chía", "cat": "Semillas"}, {"file": "placa-aritos-frutales.jpg", "title": "Aritos frutales", "cat": "Cereales y granola"}, {"file": "placa-barrita-de-fruta.jpg", "title": "Barrita de fruta", "cat": "Cereales y granola"}, {"file": "placa-cereal-sin-azucar.jpg", "title": "Cereal sin azúcar", "cat": "Cereales y granola"}, {"file": "placa-fibra.jpg", "title": "Fibra", "cat": "Cereales y granola"}, {"file": "placa-granola.jpg", "title": "Granola", "cat": "Cereales y granola"}, {"file": "placa-maiz-blanco.jpg", "title": "Maíz blanco", "cat": "Cereales y granola"}, {"file": "placa-soja-texturizada.jpg", "title": "Soja texturizada", "cat": "Cereales y granola"}, {"file": "placa-mijo.jpg", "title": "Mijo", "cat": "Cereales y granola"}, {"file": "placa-avena-instantanea.jpg", "title": "Avena instantánea", "cat": "Cereales y granola"}, {"file": "placa-harina-de-algarrobo.jpg", "title": "Harina de algarrobo", "cat": "Harinas y féculas"}, {"file": "placa-harina-integral.jpg", "title": "Harina integral", "cat": "Harinas y féculas"}, {"file": "placa-almohaditas-de-chocolate.jpg", "title": "Almohaditas de chocolate", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-almohaditas-de-avellana.jpg", "title": "Almohaditas de avellana", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-marroc.jpg", "title": "Marroc", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-almohaditas-de-frutilla.jpg", "title": "Almohaditas de frutilla", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-pasas-de-uva.jpg", "title": "Pasas de uva", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-chips-de-chocolate.jpg", "title": "Chips de chocolate", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-chocolate.jpg", "title": "Chocolate", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-pasa-de-arandanos.jpg", "title": "Pasa de arándanos", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-coco-rallado.jpg", "title": "Coco rallado", "cat": "Chocolates y frutas deshidratadas"}, {"file": "placa-arvejas.jpg", "title": "Arvejas", "cat": "Legumbres"}, {"file": "placa-garbanzos.jpg", "title": "Garbanzos", "cat": "Legumbres"}, {"file": "placa-porotos-negros.jpg", "title": "Porotos negros", "cat": "Legumbres"}, {"file": "placa-lentejas.jpg", "title": "Lentejas", "cat": "Legumbres"}, {"file": "placa-miel.jpg", "title": "Miel", "cat": "Azúcares"}, {"file": "placa-miel-de-carpincho.jpg", "title": "Miel de carpincho", "cat": "Azúcares"}, {"file": "placa-azucar-impalpable.jpg", "title": "Azúcar impalpable", "cat": "Azúcares"}, {"file": "placa-azucar-mascabo.jpg", "title": "Azúcar mascabo", "cat": "Azúcares"}, {"file": "placa-azucar-negra.jpg", "title": "Azúcar negra", "cat": "Azúcares"}, {"file": "placa-stevia-en-polvo.jpg", "title": "Stevia en polvo", "cat": "Azúcares"}, {"file": "placa-fideos-spaghetti-moron.jpg", "title": "Fideos spaghetti Morón", "cat": "Pastas"}, {"file": "placa-fideos-spaghetti.jpg", "title": "Fideos spaghetti", "cat": "Pastas"}, {"file": "placa-yerba-mate.jpg", "title": "Yerba mate", "cat": "Infusiones"}, {"file": "placa-agua-de-azahar.jpg", "title": "Agua de azahar", "cat": "Repostería"}, {"file": "placa-agar-agar.jpg", "title": "Agar agar", "cat": "Repostería"}, {"file": "placa-mantecol-casero.jpg", "title": "Mantecol casero", "cat": "Dulces"}];
+const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const lista = document.getElementById('lista');
+const contador = document.getElementById('contador');
+const aviso = document.getElementById('aviso');
+const visor = document.getElementById('visor');
+const visorImg = document.getElementById('visor-img');
+function src(p){ return '/placas/' + p.file; }
+function render(){
+  const q = norm(document.getElementById('buscar').value.trim());
+  const hash = decodeURIComponent(location.hash.replace(/^#/, ''));
+  const shown = PLACAS.filter(p => (!hash || p.file.replace('.jpg','') === hash) && norm(p.title + ' ' + p.cat).includes(q));
+  contador.textContent = shown.length + ' de ' + PLACAS.length + ' placas';
+  const cats = [...new Set(shown.map(p => p.cat))];
+  lista.innerHTML = '';
+  if (!shown.length) { lista.innerHTML = '<p class="intro">No encontramos esa placa. Probá otro nombre.</p>'; return; }
+  for (const cat of cats) {
+    const h = document.createElement('h2'); h.className = 'cat'; h.textContent = cat; lista.appendChild(h);
+    const g = document.createElement('div'); g.className = 'grilla';
+    for (const p of shown.filter(x => x.cat === cat)) {
+      const art = document.createElement('article'); art.className = 'placa'; art.id = p.file.replace('.jpg','');
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'imgbtn'; b.setAttribute('aria-label', 'Ampliar ' + p.title);
+      const img = document.createElement('img'); img.src = src(p); img.alt = 'Placa informativa: ' + p.title;
+      img.loading = 'lazy'; img.width = 875; img.height = 1313;
+      b.appendChild(img);
+      b.addEventListener('click', () => { visorImg.src = src(p); visorImg.alt = img.alt; visor.classList.add('abierto'); });
+      const h3 = document.createElement('h3'); h3.textContent = p.title;
+      const acc = document.createElement('div'); acc.className = 'acciones';
+      const gbtn = document.createElement('a'); gbtn.className = 'btn-guardar'; gbtn.href = src(p);
+      gbtn.setAttribute('download', p.file); gbtn.textContent = 'Guardar imagen';
+      const cbtn = document.createElement('button'); cbtn.type = 'button'; cbtn.className = 'btn-compartir'; cbtn.textContent = 'Compartir';
+      cbtn.addEventListener('click', () => compartir(p));
+      acc.appendChild(gbtn); acc.appendChild(cbtn);
+      art.appendChild(b); art.appendChild(h3); art.appendChild(acc);
+      g.appendChild(art);
+    }
+    lista.appendChild(g);
+  }
+}
+async function compartir(p){
+  aviso.textContent = '';
+  try {
+    const r = await fetch(src(p));
+    if (!r.ok) throw new Error('fetch');
+    const f = new File([await r.blob()], p.file, { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) {
+      await navigator.share({ files: [f], title: p.title });
+      return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const u = 'https://larutadelbienestar.ar/placas.html#' + p.file.replace('.jpg','');
+  try { await navigator.clipboard.writeText(u); aviso.textContent = 'Enlace copiado: ' + p.title; }
+  catch (e) { aviso.textContent = 'Enlace para compartir: ' + u; }
+}
+document.getElementById('buscar').addEventListener('input', render);
+document.getElementById('visor-cerrar').addEventListener('click', () => { visor.classList.remove('abierto'); visorImg.src = ''; });
+visor.addEventListener('click', e => { if (e.target === visor) { visor.classList.remove('abierto'); visorImg.src=''; } });
+window.addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>
