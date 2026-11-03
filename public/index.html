@@ -220,6 +220,7 @@
 <div class="banner" id="banner" aria-label="Productos" hidden><div class="banner-pista" id="banner-pista"></div></div>
 
 <div class="volver-panel" id="volver-panel"><a href="/admin.html">← Volver al panel</a></div>
+<div class="volver-panel visible"><a href="/placas.html">Información del producto</a></div>
 <script>
   if (new URLSearchParams(window.location.search).get('from') === 'panel') {
     document.getElementById('volver-panel').classList.add('visible');
@@ -244,6 +245,7 @@
 <main id="lista"></main>
 
 <div class="saber-mas-caja"><button type="button" class="saber-mas" id="saber-mas">Saber más</button></div>
+<div class="saber-mas-caja"><a class="saber-mas" href="/placas.html" style="display:inline-block;text-decoration:none">Placas informativas para descargar y compartir</a></div>
 
 <div class="quienes" id="quienes" role="dialog" aria-modal="true" aria-label="Quiénes somos">
   <div class="quienes-in">
