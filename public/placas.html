@@ -53,6 +53,21 @@
 <body>
 <header><div class="marca"><h1>Información del producto</h1><p>La Ruta del Bienestar</p></div></header>
 <a class="volver" href="/">← Volver al catálogo</a>
+<script>
+(function(){
+  var v = document.querySelector('a.volver');
+  if (!v) return;
+  try {
+    var ref = document.referrer ? new URL(document.referrer) : null;
+    var modo = new URLSearchParams(location.search).get('modo')
+      || (ref && ref.origin === location.origin ? new URLSearchParams(ref.search).get('modo') : null);
+    if (modo === 'menor') v.href = '/?modo=menor';
+    if (ref && ref.origin === location.origin && ref.pathname === '/') {
+      v.addEventListener('click', function(e){ e.preventDefault(); history.back(); });
+    }
+  } catch(e){}
+})();
+</script>
 <p class="intro">Buscá una placa para verla, guardarla o compartirla.</p>
 <div class="buscador"><input type="search" id="buscar" placeholder="Buscar producto o categoría" aria-label="Buscar producto o categoría"></div>
 <p class="contador" id="contador"></p>
