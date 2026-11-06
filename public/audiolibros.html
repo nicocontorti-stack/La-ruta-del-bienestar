@@ -249,7 +249,7 @@
   function lsDel(k) { try { localStorage.removeItem(K + k); } catch (e) {} }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function url(n) { return (LIBRO.archivos && LIBRO.archivos[n - 1]) || (LIBRO.base + LIBRO.archivo + pad(n) + '.mp3'); }
-  function etiqueta(n) { return LIBRO.id === 'vuelta80' && (n === 14 || n === 15 || n === 16) ? 'Capítulo ' + n + ' (resumen)' : LIBRO.completo ? 'Audio completo' : U + ' ' + n; }
+  function etiqueta(n) { return LIBRO.id === 'vuelta80' && (n === 14 || n === 15 || n === 16 || n === 17) ? 'Capítulo ' + n + ' (resumen)' : LIBRO.completo ? 'Audio completo' : U + ' ' + n; }
   function fmt(s) {
     if (!isFinite(s) || s < 0) s = 0;
     s = Math.floor(s);
