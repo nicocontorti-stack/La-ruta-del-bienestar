@@ -240,7 +240,7 @@
         <input id="np-nota" maxlength="500" placeholder="Ej: le dejé la lista de precios" autocomplete="off">
         <label for="np-volver">Volver a hablarle el (opcional)</label>
         <input id="np-volver" type="date">
-        <button class="prim" onclick="guardarNuevoProspecto()">Guardar interesado</button>
+        <button class="prim" id="btn-guardar-prospecto" onclick="guardarNuevoProspecto()">Guardar interesado</button>
       </div>
     </div>
     <div id="lista-prospectos"></div>
@@ -1129,9 +1129,14 @@
       </div>`;
     }).join('');
   }
+  let guardandoProspecto = false;
   async function guardarNuevoProspecto() {
+    if (guardandoProspecto) return;
     const nombre = $('np-nombre').value.trim();
     if (!nombre) return aviso('Poné el nombre', '#b3261e');
+    guardandoProspecto = true;
+    const btnGuardar = $('btn-guardar-prospecto');
+    if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.textContent = 'Guardando…'; }
     try {
       await api('agregarProspecto', { nombre: nombre, whatsapp: $('np-whatsapp').value.trim(), zona: $('np-zona').value.trim(), tipo: $('np-tipo').value, nota: $('np-nota').value.trim(), volver: $('np-volver').value });
       ['np-nombre', 'np-whatsapp', 'np-zona', 'np-nota', 'np-volver'].forEach((i) => ($(i).value = ''));
@@ -1140,6 +1145,10 @@
       cargarProspectos();
       cargar();
     } catch (e) { aviso(e.message, '#b3261e'); }
+    finally {
+      guardandoProspecto = false;
+      if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar interesado'; }
+    }
   }
   async function cambiarEstadoProspecto(id, estado) {
     try { await api('actualizarProspecto', { id: id, estado: estado }); aviso('Listo ✅', '#2f6b2f'); cargarProspectos(); cargar(); }
